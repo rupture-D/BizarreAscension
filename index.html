@@ -39,6 +39,12 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #09090e; }
         ::-webkit-scrollbar-thumb { background: #334; border-radius: 3px; }
+
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 0 15px #a855f7, 0 0 30px #ff0055; }
+            50% { text-shadow: 0 0 25px #ffcc00, 0 0 40px #a855f7; }
+        }
+        .title-animation { animation: titleGlow 3s infinite ease-in-out; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center h-screen w-screen m-0 p-0 bg-slate-950 overflow-hidden select-none">
@@ -47,6 +53,57 @@
         
         <!-- CRT Overlay -->
         <div class="crt-overlay"></div>
+
+        <!-- MAIN MENU OVERLAY -->
+        <div id="main-menu" class="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-between p-8">
+            <!-- Header Title -->
+            <div class="flex flex-col items-center mt-6">
+                <span class="pixel-font text-xs text-amber-400 tracking-widest mb-2">★ ASTRAL ROGUELIKE ACTION ★</span>
+                <h1 class="pixel-font text-3xl md:text-4xl text-purple-400 title-animation text-center leading-tight">JOJO'S BIZARRE ASCENT</h1>
+                <h2 class="pixel-font text-base text-red-500 glow-red mt-2">STARDUST REQUIEM</h2>
+            </div>
+
+            <!-- Stand Showcase Preview -->
+            <div class="flex gap-4 my-4 max-w-2xl w-full justify-center">
+                <div class="bg-slate-900/80 border border-purple-900/60 p-3 rounded-lg flex flex-col items-center flex-1">
+                    <span class="text-2xl mb-1">👑</span>
+                    <span class="pixel-font text-[10px] text-red-400">KING CRIMSON</span>
+                    <span class="text-[11px] text-slate-400 text-center mt-1">Erase time & predict fate</span>
+                </div>
+                <div class="bg-slate-900/80 border border-purple-900/60 p-3 rounded-lg flex flex-col items-center flex-1">
+                    <span class="text-2xl mb-1">🌍</span>
+                    <span class="pixel-font text-[10px] text-amber-400">THE WORLD</span>
+                    <span class="text-[11px] text-slate-400 text-center mt-1">Stop time completely</span>
+                </div>
+                <div class="bg-slate-900/80 border border-purple-900/60 p-3 rounded-lg flex flex-col items-center flex-1">
+                    <span class="text-2xl mb-1">🌀</span>
+                    <span class="pixel-font text-[10px] text-pink-400">TUSK ACT 4</span>
+                    <span class="text-[11px] text-slate-400 text-center mt-1">Infinite spin golden ratio</span>
+                </div>
+            </div>
+
+            <!-- Start Controls & Action -->
+            <div class="flex flex-col items-center gap-4 w-full max-w-sm mb-4">
+                <button onclick="startGame()" class="pixel-font text-sm bg-purple-700 hover:bg-purple-600 text-white w-full py-3.5 rounded-lg border-2 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.5)] hover:scale-105 transition-all">
+                    START ASCENT
+                </button>
+
+                <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 w-full text-[11px] text-slate-400">
+                    <div class="pixel-font text-[9px] text-purple-300 mb-1 text-center">QUICK CONTROLS</div>
+                    <div class="grid grid-cols-2 gap-x-2 gap-y-1">
+                        <span><kbd class="px-1 bg-slate-800 text-slate-200">A/D</kbd> Move</span>
+                        <span><kbd class="px-1 bg-slate-800 text-slate-200">Space</kbd> Jump/Double</span>
+                        <span><kbd class="px-1 bg-slate-800 text-slate-200">Shift</kbd> Dash</span>
+                        <span><kbd class="px-1 bg-slate-800 text-slate-200">J / L-Click</kbd> Attack</span>
+                        <span><kbd class="px-1 bg-slate-800 text-slate-200">1-4 / R</kbd> Abilities</span>
+                        <span><kbd class="px-1 bg-slate-800 text-slate-200">E / Q</kbd> Menu / Quests</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-[10px] text-slate-500 pixel-font">PRESS START TO AWAKEN YOUR STAND</div>
+        </div>
+
         <!-- Top HUD Bar -->
         <div class="relative z-20 flex justify-between items-center px-4 py-2 bg-slate-950/90 border-b border-purple-900/50 backdrop-blur-md">
             <!-- Stats -->
@@ -130,6 +187,7 @@
                     <button onclick="togglePauseMenu()" class="pixel-font text-xs bg-purple-800 hover:bg-purple-700 text-white py-2 rounded border border-purple-500 transition">RESUME</button>
                     <button onclick="toggleStandMenu()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 py-2 rounded border border-slate-600 transition">STANDS</button>
                     <button onclick="toggleQuestLog()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 py-2 rounded border border-slate-600 transition">QUESTS</button>
+                    <button onclick="returnToMainMenu()" class="pixel-font text-xs bg-red-900/80 hover:bg-red-800 text-red-200 py-2 rounded border border-red-600 transition">MAIN MENU</button>
                 </div>
             </div>
             <!-- Manga Sound FX Popups Container -->
@@ -288,7 +346,6 @@
             }
         }
         const audio = new SoundEngine();
-
         const QUESTS = {
             THE_WORLD_OVER_HEAVEN: {
                 id: "THE_WORLD_OVER_HEAVEN", title: "36 Sinners' Souls to Over Heaven", reqStand: "THE_WORLD",
@@ -415,10 +472,10 @@
                 ]
             }
         };
-
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
+        let inMainMenu = true;
         let isPaused = false;
         let currentRoom = 1;
         let currentRoomType = 'combat'; // combat, blessing, merchant, fount, challenge, shrine, boss
@@ -445,6 +502,21 @@
         let inventoryItems = { heavensDiary: false, greenBaby: false };
         let playerBlessingBonus = 1.0;
         const keys = { a: false, d: false };
+
+        function startGame() {
+            audio.init();
+            audio.playUltimate();
+            inMainMenu = false;
+            document.getElementById('main-menu').classList.add('hidden');
+            loadRoom(1, 'combat');
+        }
+
+        function returnToMainMenu() {
+            inMainMenu = true;
+            isPaused = false;
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
 
         class Player {
             constructor() {
@@ -477,7 +549,7 @@
                 this.history = [];
             }
             update() {
-                if (isPaused) return;
+                if (isPaused || inMainMenu) return;
                 this.history.push({ x: this.x, y: this.y, hp: this.hp });
                 if (this.history.length > 60) this.history.shift();
                 if (this.iFrameTimer > 0) {
@@ -531,7 +603,7 @@
                 this.trail = this.trail.filter(t => t.alpha > 0);
             }
             jump() {
-                if (isPaused) return;
+                if (isPaused || inMainMenu) return;
                 if (this.jumpsLeft > 0) {
                     if (this.jumpsLeft === this.maxJumps) {
                         audio.playJump();
@@ -556,7 +628,7 @@
                 }
             }
             dash() {
-                if (isPaused) return;
+                if (isPaused || inMainMenu) return;
                 this.vx = this.facing * 9.5;
                 this.invulnerable = true;
                 this.iFrameTimer = 14;
@@ -662,7 +734,6 @@
                 }
             }
         }
-
         class Enemy {
             constructor(x, y, type = 'vampire') {
                 this.x = x;
@@ -699,7 +770,7 @@
                 this.vy = 0;
             }
             update() {
-                if (this.dead || globalTimeFrozen || isPaused) return;
+                if (this.dead || globalTimeFrozen || isPaused || inMainMenu) return;
                 if (this.gravityTimer > 0) {
                     this.gravityTimer--;
                     if (this.gravityTimer <= 0) this.gravityInverted = false;
@@ -831,13 +902,12 @@
                 ctx.fillRect(this.x, this.y - 6, (Math.max(0, this.hp) / this.maxHp) * this.width, 3);
             }
         }
-
         class EnemyProjectile {
             constructor(x, y, vx, vy, damage, color = '#ff0055') {
                 this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.damage = damage; this.color = color; this.active = true;
             }
             update() {
-                if (!this.active || globalTimeFrozen || isPaused) return;
+                if (!this.active || globalTimeFrozen || isPaused || inMainMenu) return;
                 this.x += this.vx;
                 this.y += this.vy;
                 if (Math.abs(player.x - this.x) < 12 && Math.abs(player.y - this.y) < 18) {
@@ -852,7 +922,6 @@
                 ctx.fillRect(this.x - 2, this.y - 2, 5, 5);
             }
         }
-
         class Projectile {
             constructor(x, y, vx, vy, damage, isTusk = false, color = "#f472b6", pierces = 1) {
                 this.x = x; this.y = y; this.vx = vx; this.vy = vy;
@@ -864,7 +933,7 @@
                 this.life = 120;
             }
             update() {
-                if (!this.active || isPaused) return;
+                if (!this.active || isPaused || inMainMenu) return;
                 this.x += this.vx;
                 this.y += this.vy;
                 this.life--;
@@ -888,7 +957,6 @@
                 }
             }
         }
-
         class Chest {
             constructor(x, y, type = 'wood') {
                 this.x = x; this.y = y; this.w = 20; this.h = 16; this.type = type; this.opened = false;
@@ -909,18 +977,16 @@
                 ctx.strokeRect(this.x, this.y, this.w, this.h);
             }
         }
-
         let platforms = [];
         let enemies = [];
         let chests = [];
-
         function togglePauseMenu() {
+            if (inMainMenu) return;
             isPaused = !isPaused;
             const modal = document.getElementById('pause-modal');
             if (isPaused) modal.classList.remove('hidden');
             else modal.classList.add('hidden');
         }
-
         function triggerRoomChoice() {
             const modal = document.getElementById('room-choice-modal');
             const container = document.getElementById('doorway-container');
@@ -945,7 +1011,6 @@
             });
             modal.classList.remove('hidden');
         }
-
         function loadRoom(roomNum, type = 'combat') {
             currentRoom = roomNum;
             currentRoomType = type;
@@ -994,7 +1059,6 @@
             document.getElementById('room-title').innerText = `FLOOR 1 - ROOM ${roomNum} (${type.toUpperCase()})`;
             updateHUD();
         }
-
         function trackQuestKills() {
             Object.keys(QUESTS).forEach(key => {
                 const q = QUESTS[key];
@@ -1003,9 +1067,8 @@
                 }
             });
         }
-
         function useHealingPotion() {
-            if (isPaused) return;
+            if (isPaused || inMainMenu) return;
             if (healCharges <= 0) {
                 spawnMangaText(player.x, player.y - 15, "NO HEALS!", "#ff0055");
                 return;
@@ -1031,7 +1094,6 @@
             spawnMangaText(player.x, player.y - 20, `+${healAmount} HP!`, "#10b981");
             updateHUD();
         }
-
         function fireTuskProjectiles() {
             const st = STANDS.TUSK_ACT_4;
             if (st.currentAmmo <= 0) {
@@ -1050,9 +1112,8 @@
             spawnMangaText(player.x, player.y - 15, "GOLDEN SPIN!", st.color);
             updateHUD();
         }
-
         function executeM1Attack() {
-            if (player.isAttacking || isPaused) return;
+            if (player.isAttacking || isPaused || inMainMenu) return;
             player.isAttacking = true;
             player.comboStep = (player.comboStep % 4) + 1;
             player.comboTimer = 25;
@@ -1084,9 +1145,8 @@
             }
             setTimeout(() => { player.isAttacking = false; }, 120);
         }
-
         function executeAbility(slotIndex) {
-            if (isPaused) return;
+            if (isPaused || inMainMenu) return;
             const stand = STANDS[activeStandKey];
             const ability = stand.abilities[slotIndex];
             if (!ability || ability.timer > 0) return;
@@ -1194,7 +1254,6 @@
                 }
             }
         }
-
         function spawnMangaText(x, y, text, color = "#ff0055") {
             const container = document.getElementById('manga-text-container');
             const el = document.createElement('div');
@@ -1214,14 +1273,12 @@
             }, 50);
             setTimeout(() => { el.remove(); }, 700);
         }
-
         function flashScreen(color, durationMs) {
             const flash = document.getElementById('flash-overlay');
             flash.style.backgroundColor = color;
             flash.style.opacity = '1';
             setTimeout(() => { flash.style.opacity = '0'; }, durationMs);
         }
-
         function updateHUD() {
             document.getElementById('player-hp-text').innerText = `${Math.ceil(player.hp)}/${player.maxHp} HP`;
             document.getElementById('hp-bar-fill').style.width = `${(player.hp / player.maxHp) * 100}%`;
@@ -1260,8 +1317,8 @@
                 bar.appendChild(slot);
             }
         }
-
         function toggleQuestLog() {
+            if (inMainMenu) return;
             const modal = document.getElementById('quest-modal');
             const list = document.getElementById('quest-list');
             if (modal.classList.contains('hidden')) {
@@ -1293,7 +1350,6 @@
                 modal.classList.add('hidden');
             }
         }
-
         function claimEvolution(questKey) {
             const q = QUESTS[questKey];
             const itemCheck = q.needItem === "Heaven's Diary" ? inventoryItems.heavensDiary : 
@@ -1306,8 +1362,8 @@
                 audio.playUltimate();
             }
         }
-
         function toggleStandMenu() {
+            if (inMainMenu) return;
             const modal = document.getElementById('stand-modal');
             const list = document.getElementById('stand-list');
             
@@ -1334,7 +1390,6 @@
                 modal.classList.add('hidden');
             }
         }
-
         function selectStand(key) {
             if (!STANDS[key].unlocked) {
                 if (standArrows >= 1) {
@@ -1351,13 +1406,12 @@
             if (!document.getElementById('stand-modal').classList.contains('hidden')) toggleStandMenu();
             updateHUD();
         }
-
         function respawnPlayer() {
             player.hp = player.maxHp;
             healCharges = maxHealCharges;
             loadRoom(1, 'combat');
         }
-
+        // Draw Gothic Atmospheric Background
         function drawGothicBackground() {
             // Twilight Sky Gradient
             const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -1410,13 +1464,13 @@
                 ctx.stroke();
             }
         }
-
         canvas.addEventListener('mousemove', e => {
             const rect = canvas.getBoundingClientRect();
             mouseCanvasX = ((e.clientX - rect.left) / rect.width) * canvas.width;
             mouseCanvasY = ((e.clientY - rect.top) / rect.height) * canvas.height;
         });
         canvas.addEventListener('mousedown', e => {
+            if (inMainMenu) return;
             audio.init();
             const rect = canvas.getBoundingClientRect();
             const mouseX = ((e.clientX - rect.left) / rect.width) * canvas.width;
@@ -1430,6 +1484,7 @@
         });
         canvas.addEventListener('contextmenu', e => e.preventDefault());
         window.addEventListener('keydown', e => {
+            if (inMainMenu) return;
             audio.init();
             const k = e.key.toLowerCase();
             if (e.key === 'Escape') {
@@ -1456,82 +1511,82 @@
             if (k === 'a') keys.a = false;
             if (k === 'd') keys.d = false;
         });
-
         const player = new Player();
-
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             // Render Gothic Atmosphere Background
             drawGothicBackground();
-            const stand = STANDS[activeStandKey];
-            const cdMultiplier = activeStandKey === 'MIH' ? 2.5 : 1.0;
-            stand.abilities.forEach(ab => {
-                if (ab.timer > 0) {
-                    ab.timer -= (1 / 60) * cdMultiplier;
-                    if (ab.timer < 0) ab.timer = 0;
-                }
-            });
-            if (activeStandKey === 'TUSK_ACT_4') {
-                const st = STANDS.TUSK_ACT_4;
-                if (st.currentAmmo < st.maxAmmo) {
-                    st.ammoRegenTimer += 1 / 60;
-                    if (st.ammoRegenTimer >= 1.5) {
-                        st.currentAmmo++;
-                        st.ammoRegenTimer = 0;
-                        updateHUD();
+            
+            if (!inMainMenu) {
+                const stand = STANDS[activeStandKey];
+                const cdMultiplier = activeStandKey === 'MIH' ? 2.5 : 1.0;
+                stand.abilities.forEach(ab => {
+                    if (ab.timer > 0) {
+                        ab.timer -= (1 / 60) * cdMultiplier;
+                        if (ab.timer < 0) ab.timer = 0;
+                    }
+                });
+                if (activeStandKey === 'TUSK_ACT_4') {
+                    const st = STANDS.TUSK_ACT_4;
+                    if (st.currentAmmo < st.maxAmmo) {
+                        st.ammoRegenTimer += 1 / 60;
+                        if (st.ammoRegenTimer >= 1.5) {
+                            st.currentAmmo++;
+                            st.ammoRegenTimer = 0;
+                            updateHUD();
+                        }
                     }
                 }
-            }
-            player.update();
-            enemies.forEach(e => e.update());
-            projectiles.forEach(p => p.update());
-            enemyProjectiles.forEach(ep => ep.update());
-            chests.forEach(c => {
-                if (!c.opened && Math.abs(player.x - c.x) < 20 && Math.abs(player.y - c.y) < 20) {
-                    c.open();
+                player.update();
+                enemies.forEach(e => e.update());
+                projectiles.forEach(p => p.update());
+                enemyProjectiles.forEach(ep => ep.update());
+                chests.forEach(c => {
+                    if (!c.opened && Math.abs(player.x - c.x) < 20 && Math.abs(player.y - c.y) < 20) {
+                        c.open();
+                    }
+                });
+                if (enemies.every(e => e.dead) && player.x > canvas.width - 25) {
+                    triggerRoomChoice();
+                    player.x = canvas.width - 30;
                 }
-            });
-            if (enemies.every(e => e.dead) && player.x > canvas.width - 25) {
-                triggerRoomChoice();
-                player.x = canvas.width - 30;
-            }
-            // Draw Detailed Gothic Stone Platforms
-            platforms.forEach(p => {
-                ctx.fillStyle = '#1e1b2e';
-                ctx.fillRect(p.x, p.y, p.w, p.h);
-                ctx.strokeStyle = '#4c1d95';
-                ctx.strokeRect(p.x, p.y, p.w, p.h);
-                // Carved Top Pattern
-                ctx.fillStyle = '#2d264a';
-                ctx.fillRect(p.x, p.y, p.w, 3);
-            });
-            // Draw Hazards (Spikes)
-            ctx.fillStyle = '#ef4444';
-            hazards.forEach(h => {
-                for (let i = 0; i < h.w; i += 10) {
+                // Draw Detailed Gothic Stone Platforms
+                platforms.forEach(p => {
+                    ctx.fillStyle = '#1e1b2e';
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
+                    ctx.strokeStyle = '#4c1d95';
+                    ctx.strokeRect(p.x, p.y, p.w, p.h);
+                    // Carved Top Pattern
+                    ctx.fillStyle = '#2d264a';
+                    ctx.fillRect(p.x, p.y, p.w, 3);
+                });
+                // Draw Hazards (Spikes)
+                ctx.fillStyle = '#ef4444';
+                hazards.forEach(h => {
+                    for (let i = 0; i < h.w; i += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(h.x + i, h.y + h.h);
+                        ctx.lineTo(h.x + i + 5, h.y);
+                        ctx.lineTo(h.x + i + 10, h.y + h.h);
+                        ctx.fill();
+                    }
+                });
+                chests.forEach(c => c.draw());
+                enemies.forEach(e => e.draw());
+                projectiles.forEach(p => p.draw());
+                enemyProjectiles.forEach(ep => ep.draw());
+                player.draw();
+                if (activeStandKey.startsWith('TUSK')) {
+                    ctx.strokeStyle = '#f472b6';
+                    ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.moveTo(h.x + i, h.y + h.h);
-                    ctx.lineTo(h.x + i + 5, h.y);
-                    ctx.lineTo(h.x + i + 10, h.y + h.h);
-                    ctx.fill();
+                    ctx.arc(mouseCanvasX, mouseCanvasY, 6, 0, Math.PI * 2);
+                    ctx.stroke();
                 }
-            });
-            chests.forEach(c => c.draw());
-            enemies.forEach(e => e.draw());
-            projectiles.forEach(p => p.draw());
-            enemyProjectiles.forEach(ep => ep.draw());
-            player.draw();
-            if (activeStandKey.startsWith('TUSK')) {
-                ctx.strokeStyle = '#f472b6';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.arc(mouseCanvasX, mouseCanvasY, 6, 0, Math.PI * 2);
-                ctx.stroke();
+                updateHUD();
             }
-            updateHUD();
             requestAnimationFrame(gameLoop);
         }
-
         window.onload = () => {
             loadRoom(1, 'combat');
             gameLoop();
