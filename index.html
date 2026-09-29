@@ -47,20 +47,6 @@
         
         <!-- CRT Overlay -->
         <div class="crt-overlay"></div>
-
-        <!-- Start / Main Menu Screen Overlay -->
-        <div id="main-menu-overlay" class="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
-            <h1 class="pixel-font text-2xl text-purple-400 mb-2 glow-purple">JOJO'S BIZARRE ASCENT</h1>
-            <h2 class="pixel-font text-xs text-amber-400 mb-8 glow-gold">STARDUST REQUIEM</h2>
-            
-            <div class="flex flex-col gap-4 w-64">
-                <button onclick="startGameFromMenu()" class="pixel-font text-sm bg-purple-800 hover:bg-purple-700 text-white py-3 rounded border border-purple-500 transition shadow-lg shadow-purple-900/50">START ASCENT</button>
-                <button onclick="toggleStandMenu()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 py-2.5 rounded border border-slate-600 transition">STAND CHAMBER</button>
-                <button onclick="toggleQuestLog()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 py-2.5 rounded border border-slate-600 transition">QUEST LOG</button>
-            </div>
-            <p class="text-xs text-slate-500 mt-8">Use A/D to move, Space to Jump, L-Click to Attack, ESC to Pause</p>
-        </div>
-
         <!-- Top HUD Bar -->
         <div class="relative z-20 flex justify-between items-center px-4 py-2 bg-slate-950/90 border-b border-purple-900/50 backdrop-blur-md">
             <!-- Stats -->
@@ -111,7 +97,6 @@
                 </div>
                 <button onclick="toggleQuestLog()" class="pixel-font text-[9px] bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 px-2.5 py-2 rounded border border-amber-600/60 transition">QUESTS [Q]</button>
                 <button onclick="toggleStandMenu()" class="pixel-font text-[9px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 px-2.5 py-2 rounded border border-purple-500/50 transition">STANDS [E]</button>
-                <button onclick="openMainMenu()" class="pixel-font text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-2 rounded border border-slate-600 transition">MENU</button>
             </div>
         </div>
         <!-- Canvas Viewport -->
@@ -145,7 +130,6 @@
                     <button onclick="togglePauseMenu()" class="pixel-font text-xs bg-purple-800 hover:bg-purple-700 text-white py-2 rounded border border-purple-500 transition">RESUME</button>
                     <button onclick="toggleStandMenu()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 py-2 rounded border border-slate-600 transition">STANDS</button>
                     <button onclick="toggleQuestLog()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 py-2 rounded border border-slate-600 transition">QUESTS</button>
-                    <button onclick="openMainMenu()" class="pixel-font text-xs bg-red-900 hover:bg-red-800 text-red-200 py-2 rounded border border-red-700 transition">MAIN MENU</button>
                 </div>
             </div>
             <!-- Manga Sound FX Popups Container -->
@@ -433,9 +417,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        let isPaused = true;
-        let inMainMenu = true;
-        let currentFloor = 1;
+        let isPaused = false;
         let currentRoom = 1;
         let currentRoomType = 'combat'; // combat, blessing, merchant, fount, challenge, shrine, boss
         let stardust = 0;
@@ -461,23 +443,6 @@
         let inventoryItems = { heavensDiary: false, greenBaby: false };
         let playerBlessingBonus = 1.0;
         const keys = { a: false, d: false };
-
-        function openMainMenu() {
-            inMainMenu = true;
-            isPaused = true;
-            document.getElementById('main-menu-overlay').classList.remove('hidden');
-            document.getElementById('pause-modal').classList.add('hidden');
-        }
-
-        function startGameFromMenu() {
-            inMainMenu = false;
-            isPaused = false;
-            document.getElementById('main-menu-overlay').classList.add('hidden');
-            if (player.hp <= 0) {
-                respawnPlayer();
-            }
-        }
-
         class Player {
             constructor() {
                 this.x = 60;
@@ -707,7 +672,7 @@
                 this.gravityTimer = 0;
                 
                 // Difficulty Multiplier based on Current Room Level
-                const diffScale = 1.0 + (currentRoom - 1) * 0.2 + (currentFloor - 1) * 0.4;
+                const diffScale = 1.0 + (currentRoom - 1) * 0.25;
                 if (type === 'boss') {
                     this.width = 24; this.height = 36; this.hp = Math.round(300 * diffScale); this.maxHp = this.hp; this.speed = 1.6;
                 } else if (type === 'zombie_brute') {
@@ -941,7 +906,6 @@
         let enemies = [];
         let chests = [];
         function togglePauseMenu() {
-            if (inMainMenu) return;
             isPaused = !isPaused;
             const modal = document.getElementById('pause-modal');
             if (isPaused) modal.classList.remove('hidden');
@@ -956,8 +920,7 @@
                 { type: 'blessing', label: '✨ Astral Blessing', color: 'border-cyan-500 bg-cyan-950/60' },
                 { type: 'merchant', label: '🛒 Stardust Merchant', color: 'border-amber-500 bg-amber-950/60' },
                 { type: 'fount', label: '🧪 Health Fount', color: 'border-emerald-500 bg-emerald-950/60' },
-                { type: 'challenge', label: '⚠️ Spike Challenge', color: 'border-purple-600 bg-purple-950/60' },
-                { type: 'shrine', label: '⛩️ Requiem Shrine', color: 'border-pink-600 bg-pink-950/60' }
+                { type: 'challenge', label: '⚠️ Spike Challenge', color: 'border-purple-600 bg-purple-950/60' }
             ];
             const choices = availableTypes.sort(() => 0.5 - Math.random()).slice(0, 3);
             choices.forEach(c => {
@@ -966,21 +929,14 @@
                 door.innerHTML = `<span class="pixel-font text-xs text-white mb-2">${c.label}</span><span class="text-[10px] text-slate-400">Ascend Doorway</span>`;
                 door.onclick = () => {
                     modal.classList.add('hidden');
-                    let nextRoom = currentRoom + 1;
-                    let nextFloor = currentFloor;
-                    if (nextRoom > 6) {
-                        nextRoom = 1;
-                        nextFloor++;
-                    }
-                    loadRoom(nextRoom, c.type, nextFloor);
+                    loadRoom(currentRoom + 1, c.type);
                 };
                 container.appendChild(door);
             });
             modal.classList.remove('hidden');
         }
-        function loadRoom(roomNum, type = 'combat', floorNum = 1) {
+        function loadRoom(roomNum, type = 'combat') {
             currentRoom = roomNum;
-            currentFloor = floorNum;
             currentRoomType = type;
             platforms = [];
             enemies = [];
@@ -992,78 +948,39 @@
             player.x = 40;
             player.y = 220;
             player.deniedFateUsed = false;
-            
-            // Standard Ground Platform
             platforms.push({ x: 0, y: 310, w: 640, h: 50 });
-
-            // Expanded Dynamic Layout Mechanics
-            const roomLayoutIndex = (roomNum + floorNum) % 4;
-
             if (type === 'fount') {
                 player.hp = player.maxHp;
                 healCharges = maxHealCharges;
                 spawnMangaText(320, 150, "HEALTH RESTORED!", "#10b981");
                 audio.playHeal();
-                platforms.push({ x: 260, y: 220, w: 120, h: 14 });
-                chests.push(new Chest(310, 204, 'wood'));
             } else if (type === 'blessing') {
                 playerBlessingBonus += 0.15;
                 spawnMangaText(320, 150, "ASTRAL POWER +15%!", "#06b6d4");
                 audio.playUltimate();
-                platforms.push({ x: 200, y: 200, w: 240, h: 14 });
-            } else if (type === 'shrine') {
-                standArrows += 1;
-                spawnMangaText(320, 150, "STAND ARROW OBTAINED!", "#ec4899");
-                audio.playTimeStop();
-                platforms.push({ x: 180, y: 230, w: 100, h: 14 });
-                platforms.push({ x: 360, y: 230, w: 100, h: 14 });
-            } else if (type === 'merchant') {
-                platforms.push({ x: 220, y: 230, w: 200, h: 14 });
-                chests.push(new Chest(240, 214, 'gold'));
-                chests.push(new Chest(380, 214, 'gold'));
             } else if (type === 'challenge') {
-                hazards.push({ x: 140, y: 295, w: 120, h: 15 });
+                hazards.push({ x: 180, y: 295, w: 120, h: 15 });
                 hazards.push({ x: 380, y: 295, w: 120, h: 15 });
-                platforms.push({ x: 120, y: 230, w: 80, h: 14 });
-                platforms.push({ x: 280, y: 170, w: 80, h: 14 });
-                platforms.push({ x: 440, y: 230, w: 80, h: 14 });
-                enemies.push(new Enemy(290, 120, 'vampire_archer'));
-                enemies.push(new Enemy(450, 180, 'fleshbud_zealot'));
+                platforms.push({ x: 140, y: 230, w: 80, h: 14 });
+                platforms.push({ x: 310, y: 170, w: 80, h: 14 });
+                platforms.push({ x: 480, y: 230, w: 80, h: 14 });
+                enemies.push(new Enemy(320, 120, 'vampire_archer'));
             }
-
-            if (roomNum === 6 || type === 'boss') {
-                platforms.push({ x: 180, y: 210, w: 280, h: 14 });
-                enemies.push(new Enemy(320, 150, 'boss'));
+            if (roomNum === 3 || type === 'boss') {
+                platforms.push({ x: 200, y: 210, w: 240, h: 14 });
+                enemies.push(new Enemy(320, 160, 'boss'));
                 chests.push(new Chest(550, 294, 'coffer'));
             } else if (type === 'combat') {
-                if (roomLayoutIndex === 0) {
-                    platforms.push({ x: 100, y: 240, w: 120, h: 14 });
-                    platforms.push({ x: 260, y: 180, w: 120, h: 14 });
-                    platforms.push({ x: 420, y: 240, w: 120, h: 14 });
-                    enemies.push(new Enemy(130, 200, 'zombie_brute'));
-                    enemies.push(new Enemy(290, 140, 'vampire_archer'));
-                    enemies.push(new Enemy(450, 200, 'shadow_assassin'));
-                } else if (roomLayoutIndex === 1) {
-                    platforms.push({ x: 80, y: 210, w: 100, h: 14 });
-                    platforms.push({ x: 220, y: 150, w: 200, h: 14 });
-                    platforms.push({ x: 460, y: 210, w: 100, h: 14 });
-                    hazards.push({ x: 260, y: 295, w: 120, h: 15 });
-                    enemies.push(new Enemy(240, 100, 'pillar_sentinel'));
-                    enemies.push(new Enemy(340, 100, 'shadow_assassin'));
-                } else if (roomLayoutIndex === 2) {
-                    platforms.push({ x: 140, y: 220, w: 150, h: 14 });
-                    platforms.push({ x: 350, y: 220, w: 150, h: 14 });
-                    enemies.push(new Enemy(180, 180, 'fleshbud_zealot'));
-                    enemies.push(new Enemy(380, 180, 'zombie_brute'));
-                    enemies.push(new Enemy(480, 260, 'vampire_archer'));
-                } else {
-                    platforms.push({ x: 180, y: 180, w: 280, h: 14 });
-                    enemies.push(new Enemy(220, 130, 'vampire_archer'));
-                    enemies.push(new Enemy(380, 130, 'zombie_brute'));
-                }
-                chests.push(new Chest(320, 164, roomNum % 2 === 0 ? 'gold' : 'wood'));
+                platforms.push({ x: 120, y: 240, w: 100, h: 14 });
+                platforms.push({ x: 280, y: 180, w: 120, h: 14 });
+                platforms.push({ x: 460, y: 240, w: 110, h: 14 });
+                enemies.push(new Enemy(150, 200, 'zombie_brute'));
+                enemies.push(new Enemy(310, 140, 'vampire_archer'));
+                enemies.push(new Enemy(480, 200, 'shadow_assassin'));
+                enemies.push(new Enemy(280, 80, 'pillar_sentinel'));
+                chests.push(new Chest(320, 164, 'gold'));
             }
-            document.getElementById('room-title').innerText = `FLOOR ${currentFloor} - ROOM roomNum({type.toUpperCase()})`;
+            document.getElementById('room-title').innerText = `FLOOR 1 - ROOM ${roomNum} (${type.toUpperCase()})`;
             updateHUD();
         }
         function trackQuestKills() {
@@ -1158,6 +1075,7 @@
             const ability = stand.abilities[slotIndex];
             if (!ability || ability.timer > 0) return;
             ability.timer = ability.cd;
+
             if (activeStandKey === 'KCR') {
                 if (ability.name === "Time Erasure") {
                     timeErasureActive = true;
@@ -1222,8 +1140,131 @@
                     }, 1800);
                 }
             }
+            else if (activeStandKey === 'THE_WORLD') {
+                if (ability.name === "Muda Barrage") {
+                    audio.playPunch();
+                    spawnMangaText(player.x, player.y - 20, "MUDA MUDA!", "#ffcc00");
+                    for (let i = 0; i < 5; i++) {
+                        setTimeout(() => {
+                            enemies.forEach(e => {
+                                if (!e.dead && Math.abs(e.x - player.x) < 45 && Math.abs(e.y - player.y) < 30) {
+                                    e.takeDamage(8);
+                                }
+                            });
+                        }, i * 70);
+                    }
+                }
+                else if (ability.name === "Knife Flurry") {
+                    audio.playPunch();
+                    spawnMangaText(player.x, player.y - 20, "KNIFE FLURRY!", "#ffcc00");
+                    for (let i = -1; i <= 1; i++) {
+                        const vx = player.facing * 8;
+                        const vy = i * 1.5;
+                        projectiles.push(new Projectile(player.x + (player.facing * 10), player.y + 10, vx, vy, 14, false, "#ffcc00", 1));
+                    }
+                }
+                else if (ability.name === "Road Roller") {
+                    audio.playUltimate();
+                    spawnMangaText(player.x, player.y - 25, "ROAD ROLLER DA!", "#ffcc00");
+                    flashScreen("rgba(255, 204, 0, 0.2)", 500);
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 80) {
+                            e.takeDamage(50);
+                            e.vy = 4;
+                        }
+                    });
+                }
+                else if (ability.name === "Time Stop") {
+                    globalTimeFrozen = true;
+                    flashScreen("rgba(255, 204, 0, 0.4)", 3500);
+                    audio.playTimeStop();
+                    spawnMangaText(player.x, player.y - 20, "ZA WARUDO!", "#ffcc00");
+                    setTimeout(() => { globalTimeFrozen = false; }, 3500);
+                }
+            }
+            else if (activeStandKey === 'TWOH') {
+                if (ability.name === "Overwrite Punch") {
+                    audio.playPunch();
+                    spawnMangaText(player.x, player.y - 15, "OVERWRITE!", "#ffffff");
+                    player.hp = Math.min(player.maxHp, player.hp + 12);
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 40 && Math.abs(e.y - player.y) < 30) {
+                            e.takeDamage(35);
+                        }
+                    });
+                    updateHUD();
+                }
+                else if (ability.name === "Heaven's Smite") {
+                    audio.playUltimate();
+                    spawnMangaText(player.x, player.y - 20, "HEAVEN'S SMITE!", "#ffffff");
+                    flashScreen("rgba(255, 255, 255, 0.5)", 400);
+                    enemies.forEach(e => {
+                        if (!e.dead) {
+                            e.takeDamage(30);
+                        }
+                    });
+                }
+                else if (ability.name === "Reality Rewind") {
+                    audio.playHeal();
+                    player.hp = Math.min(player.maxHp, player.hp + 40);
+                    spawnMangaText(player.x, player.y - 20, "REALITY REWIND!", "#ffffff");
+                    flashScreen("rgba(255, 255, 255, 0.3)", 300);
+                    updateHUD();
+                }
+                else if (ability.name === "Infinite Time Stop") {
+                    globalTimeFrozen = true;
+                    flashScreen("rgba(255, 255, 255, 0.7)", 4000);
+                    audio.playTimeStop();
+                    spawnMangaText(player.x, player.y - 20, "OVER HEAVEN TIME STOP!", "#ffffff");
+                    enemies.forEach(e => {
+                        if (!e.dead) e.takeDamage(60);
+                    });
+                    setTimeout(() => { globalTimeFrozen = false; }, 4000);
+                }
+            }
+            else if (activeStandKey === 'WHITESNAKE') {
+                if (ability.name === "DISC Plunder") {
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 50) {
+                            e.takeDamage(25);
+                            spawnMangaText(e.x, e.y - 15, "DISC STOLEN!", "#cbd5e1");
+                        }
+                    });
+                }
+                else if (ability.name === "Melt Illusion") {
+                    audio.playTimeErase();
+                    spawnMangaText(player.x, player.y - 20, "MELT ILLUSION!", "#cbd5e1");
+                    flashScreen("rgba(203, 213, 225, 0.3)", 800);
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 90) {
+                            e.attackTimer = 120;
+                        }
+                    });
+                }
+                else if (ability.name === "Command DISC") {
+                    audio.playPunch();
+                    spawnMangaText(player.x, player.y - 20, "COMMAND DISC!", "#cbd5e1");
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 80) {
+                            e.takeDamage(20);
+                            e.facing *= -1;
+                        }
+                    });
+                }
+            }
             else if (activeStandKey === 'CMOON') {
-                if (ability.name === "Gravitational Shift") {
+                if (ability.name === "Surface Inversion") {
+                    audio.playPunch();
+                    spawnMangaText(player.x, player.y - 20, "INVERSION PUNCH!", "#10b981");
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 45) {
+                            e.takeDamage(32);
+                            e.vx = player.facing * 10;
+                            e.vy = -4;
+                        }
+                    });
+                }
+                else if (ability.name === "Gravitational Shift") {
                     audio.playGravityShift();
                     enemies.forEach(e => {
                         if (!e.dead) {
@@ -1233,31 +1274,118 @@
                     });
                     spawnMangaText(player.x, player.y - 20, "GRAVITY INVERT!", "#10b981");
                 }
-            }
-            else if (activeStandKey === 'WHITESNAKE') {
-                if (ability.name === "DISC Plunder") {
+                else if (ability.name === "Gravitational Repulsion") {
+                    audio.playGravityShift();
+                    spawnMangaText(player.x, player.y - 20, "REPULSION!", "#10b981");
+                    enemyProjectiles = [];
                     enemies.forEach(e => {
-                        if (!e.dead && Math.abs(e.x - player.x) < 50) {
-                            e.takeDamage(28);
-                            spawnMangaText(e.x, e.y - 15, "DISC STOLEN!", "#cbd5e1");
+                        if (!e.dead && Math.abs(e.x - player.x) < 100) {
+                            e.vx = (e.x < player.x ? -1 : 1) * 8;
                         }
                     });
                 }
             }
             else if (activeStandKey === 'MIH') {
-                if (ability.name === "Time Acceleration") {
+                if (ability.name === "Accel Dash") {
+                    audio.playSpin();
+                    player.x += player.facing * 120;
+                    spawnMangaText(player.x, player.y - 20, "ACCEL SLASH!", "#06b6d4");
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 100) {
+                            e.takeDamage(28);
+                        }
+                    });
+                }
+                else if (ability.name === "Spatial Cut") {
+                    audio.playPunch();
+                    spawnMangaText(player.x, player.y - 20, "SPATIAL CUT!", "#06b6d4");
+                    projectiles.push(new Projectile(player.x + (player.facing * 10), player.y + 10, player.facing * 12, 0, 22, false, "#06b6d4", 3));
+                }
+                else if (ability.name === "Time Acceleration") {
                     stand.abilities.forEach(a => a.timer = 0);
                     flashScreen("rgba(6, 182, 212, 0.4)", 800);
                     spawnMangaText(player.x, player.y - 20, "MADE IN HEAVEN!", "#06b6d4");
                 }
             }
-            else if (activeStandKey === 'THE_WORLD') {
-                if (ability.name === "Time Stop") {
-                    globalTimeFrozen = true;
-                    flashScreen("rgba(255, 204, 0, 0.4)", 3500);
-                    audio.playTimeStop();
-                    spawnMangaText(player.x, player.y - 20, "ZA WARUDO!", "#ffcc00");
-                    setTimeout(() => { globalTimeFrozen = false; }, 3500);
+            else if (activeStandKey === 'TUSK_ACT_1') {
+                if (ability.name === "Nail Bullet") {
+                    executeM1Attack();
+                }
+                else if (ability.name === "Spin Flurry") {
+                    audio.playSpin();
+                    spawnMangaText(player.x, player.y - 20, "SPIN FLURRY!", "#f472b6");
+                    const originX = player.x + (player.facing * 10);
+                    const originY = player.y + 10;
+                    const baseAngle = Math.atan2(mouseCanvasY - originY, mouseCanvasX - originX);
+                    for (let offset of [-0.2, 0, 0.2]) {
+                        const vx = Math.cos(baseAngle + offset) * 7.5;
+                        const vy = Math.sin(baseAngle + offset) * 7.5;
+                        projectiles.push(new Projectile(originX, originY, vx, vy, 8, true, "#f472b6", 1));
+                    }
+                }
+            }
+            else if (activeStandKey === 'TUSK_ACT_2') {
+                if (ability.name === "Golden Rectangle Nail") {
+                    executeM1Attack();
+                }
+                else if (ability.name === "Chasing Hole") {
+                    audio.playSpin();
+                    spawnMangaText(player.x, player.y - 20, "CHASING HOLE!", "#ec4899");
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 140) {
+                            e.takeDamage(20);
+                            e.vy = -3;
+                        }
+                    });
+                }
+            }
+            else if (activeStandKey === 'TUSK_ACT_3') {
+                if (ability.name === "Wormhole Shot") {
+                    audio.playSpin();
+                    spawnMangaText(mouseCanvasX, mouseCanvasY, "WORMHOLE SHOT!", "#db2777");
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - mouseCanvasX) < 30 && Math.abs(e.y - mouseCanvasY) < 30) {
+                            e.takeDamage(16);
+                        }
+                    });
+                }
+                else if (ability.name === "Wormhole Teleport") {
+                    audio.playSpin();
+                    player.x = Math.max(10, Math.min(canvas.width - 20, mouseCanvasX));
+                    player.y = Math.max(10, Math.min(canvas.height - 30, mouseCanvasY));
+                    spawnMangaText(player.x, player.y - 20, "WORMHOLE TRAVEL!", "#db2777");
+                }
+            }
+            else if (activeStandKey === 'TUSK_ACT_4') {
+                if (ability.name === "Golden Spin Rush") {
+                    audio.playSpin();
+                    spawnMangaText(player.x, player.y - 20, "GOLDEN SPIN RUSH!", "#be185d");
+                    for (let i = 0; i < 4; i++) {
+                        setTimeout(() => {
+                            const originX = player.x + (player.facing * 10);
+                            const originY = player.y + 10;
+                            const angle = Math.atan2(mouseCanvasY - originY, mouseCanvasX - originX);
+                            projectiles.push(new Projectile(originX, originY, Math.cos(angle) * 8, Math.sin(angle) * 8, 12, true, "#be185d", 2));
+                        }, i * 80);
+                    }
+                }
+                else if (ability.name === "Dimensional Tear") {
+                    audio.playUltimate();
+                    spawnMangaText(mouseCanvasX, mouseCanvasY, "DIMENSIONAL TEAR!", "#be185d");
+                    flashScreen("rgba(190, 24, 93, 0.3)", 300);
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - mouseCanvasX) < 50) {
+                            e.takeDamage(35);
+                        }
+                    });
+                }
+                else if (ability.name === "Infinite Rotation Bullet") {
+                    audio.playUltimate();
+                    spawnMangaText(player.x, player.y - 20, "CHUMI-MIN! INFINITE ROTATION!", "#be185d");
+                    const originX = player.x + (player.facing * 10);
+                    const originY = player.y + 10;
+                    const angle = Math.atan2(mouseCanvasY - originY, mouseCanvasX - originX);
+                    projectiles.push(new Projectile(originX, originY, Math.cos(angle) * 9, Math.sin(angle) * 9, 80, true, "#be185d", 10));
                 }
             }
         }
@@ -1287,12 +1415,12 @@
             setTimeout(() => { flash.style.opacity = '0'; }, durationMs);
         }
         function updateHUD() {
-            document.getElementById('player-hp-text').innerText = `Math.ceil(player.hp)/{player.maxHp} HP`;
+            document.getElementById('player-hp-text').innerText = `${Math.ceil(player.hp)}/${player.maxHp} HP`;
             document.getElementById('hp-bar-fill').style.width = `${(player.hp / player.maxHp) * 100}%`;
             document.getElementById('dust-count').innerText = stardust;
             document.getElementById('arrow-count').innerText = standArrows;
             document.getElementById('corpse-count').innerText = corpseParts;
-            document.getElementById('heal-charges-text').innerText = `healCharges/{maxHealCharges}`;
+            document.getElementById('heal-charges-text').innerText = `${healCharges}/${maxHealCharges}`;
             document.getElementById('enemy-count').innerText = `Enemies: ${enemies.filter(e => !e.dead).length}`;
             const bar = document.getElementById('ability-bar');
             bar.innerHTML = '';
@@ -1320,7 +1448,7 @@
                 const st = STANDS.TUSK_ACT_4;
                 const slot = document.createElement('div');
                 slot.className = 'relative flex flex-col items-center justify-center w-11 h-11 bg-pink-950 border border-pink-500/60 rounded-lg p-1 text-center';
-                slot.innerHTML = `<span class="absolute top-0.5 left-1 text-[8px] pixel-font text-pink-300">E/R-Clk</span><span class="text-[8px] font-bold leading-tight text-pink-200 mt-2">NAILS: st.currentAmmo/{st.maxAmmo}</span>`;
+                slot.innerHTML = `<span class="absolute top-0.5 left-1 text-[8px] pixel-font text-pink-300">E/R-Clk</span><span class="text-[8px] font-bold leading-tight text-pink-200 mt-2">NAILS: ${st.currentAmmo}/${st.maxAmmo}</span>`;
                 bar.appendChild(slot);
             }
         }
@@ -1339,7 +1467,7 @@
                     card.innerHTML = `
                         <div class="flex justify-between items-center mb-1">
                             <span class="pixel-font text-xs text-amber-300">${q.title}</span>
-                            <span class="pixel-font text-[9px] canEvolve?'text-emerald-400':'text-slate-400'">{q.killsCurrent}/${q.killsReq} KILLS</span>
+                            <span class="pixel-font text-[9px] ${canEvolve?'text-emerald-400':'text-slate-400'}">${q.killsCurrent}/${q.killsReq} KILLS</span>
                         </div>
                         <div class="text-[11px] text-slate-400 mb-2">${q.description}</div>
                         <div class="flex justify-between items-center text-[10px]">
@@ -1381,7 +1509,7 @@
                     
                     card.innerHTML = `
                         <div>
-                            <div class="pixel-font text-xs mb-1" style="color: st.color">{st.name}</div>
+                            <div class="pixel-font text-xs mb-1" style="color: ${st.color}">${st.name}</div>
                             <div class="text-[11px] text-slate-400 leading-tight mb-3">${st.description}</div>
                         </div>
                         <button onclick="selectStand('${key}')" class="pixel-font text-[9px] w-full py-1.5 rounded ${st.unlocked ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">
@@ -1414,7 +1542,7 @@
         function respawnPlayer() {
             player.hp = player.maxHp;
             healCharges = maxHealCharges;
-            loadRoom(1, 'combat', 1);
+            loadRoom(1, 'combat');
         }
         // Draw Gothic Atmospheric Background
         function drawGothicBackground() {
@@ -1588,11 +1716,9 @@
             requestAnimationFrame(gameLoop);
         }
         window.onload = () => {
-            loadRoom(1, 'combat', 1);
-            openMainMenu();
+            loadRoom(1, 'combat');
             gameLoop();
         };
     </script>
 </body>
 </html>
-
