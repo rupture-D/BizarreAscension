@@ -39,12 +39,6 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #09090e; }
         ::-webkit-scrollbar-thumb { background: #334; border-radius: 3px; }
-
-        @keyframes titleGlow {
-            0%, 100% { text-shadow: 0 0 15px #a855f7, 0 0 30px #ff0055; }
-            50% { text-shadow: 0 0 25px #ffcc00, 0 0 40px #a855f7; }
-        }
-        .title-animation { animation: titleGlow 3s infinite ease-in-out; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center h-screen w-screen m-0 p-0 bg-slate-950 overflow-hidden select-none">
@@ -53,57 +47,6 @@
         
         <!-- CRT Overlay -->
         <div class="crt-overlay"></div>
-
-        <!-- MAIN MENU OVERLAY -->
-        <div id="main-menu" class="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-between p-8">
-            <!-- Header Title -->
-            <div class="flex flex-col items-center mt-6">
-                <span class="pixel-font text-xs text-amber-400 tracking-widest mb-2">★ ASTRAL ROGUELIKE ACTION ★</span>
-                <h1 class="pixel-font text-3xl md:text-4xl text-purple-400 title-animation text-center leading-tight">JOJO'S BIZARRE ASCENT</h1>
-                <h2 class="pixel-font text-base text-red-500 glow-red mt-2">STARDUST REQUIEM</h2>
-            </div>
-
-            <!-- Stand Showcase Preview -->
-            <div class="flex gap-4 my-4 max-w-2xl w-full justify-center">
-                <div class="bg-slate-900/80 border border-purple-900/60 p-3 rounded-lg flex flex-col items-center flex-1">
-                    <span class="text-2xl mb-1">👑</span>
-                    <span class="pixel-font text-[10px] text-red-400">KING CRIMSON</span>
-                    <span class="text-[11px] text-slate-400 text-center mt-1">Erase time & predict fate</span>
-                </div>
-                <div class="bg-slate-900/80 border border-purple-900/60 p-3 rounded-lg flex flex-col items-center flex-1">
-                    <span class="text-2xl mb-1">🌍</span>
-                    <span class="pixel-font text-[10px] text-amber-400">THE WORLD</span>
-                    <span class="text-[11px] text-slate-400 text-center mt-1">Stop time completely</span>
-                </div>
-                <div class="bg-slate-900/80 border border-purple-900/60 p-3 rounded-lg flex flex-col items-center flex-1">
-                    <span class="text-2xl mb-1">🌀</span>
-                    <span class="pixel-font text-[10px] text-pink-400">TUSK ACT 4</span>
-                    <span class="text-[11px] text-slate-400 text-center mt-1">Infinite spin golden ratio</span>
-                </div>
-            </div>
-
-            <!-- Start Controls & Action -->
-            <div class="flex flex-col items-center gap-4 w-full max-w-sm mb-4">
-                <button onclick="startGame()" class="pixel-font text-sm bg-purple-700 hover:bg-purple-600 text-white w-full py-3.5 rounded-lg border-2 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.5)] hover:scale-105 transition-all">
-                    START ASCENT
-                </button>
-
-                <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 w-full text-[11px] text-slate-400">
-                    <div class="pixel-font text-[9px] text-purple-300 mb-1 text-center">QUICK CONTROLS</div>
-                    <div class="grid grid-cols-2 gap-x-2 gap-y-1">
-                        <span><kbd class="px-1 bg-slate-800 text-slate-200">A/D</kbd> Move</span>
-                        <span><kbd class="px-1 bg-slate-800 text-slate-200">Space</kbd> Jump/Double</span>
-                        <span><kbd class="px-1 bg-slate-800 text-slate-200">Shift</kbd> Dash</span>
-                        <span><kbd class="px-1 bg-slate-800 text-slate-200">J / L-Click</kbd> Attack</span>
-                        <span><kbd class="px-1 bg-slate-800 text-slate-200">1-4 / R</kbd> Abilities</span>
-                        <span><kbd class="px-1 bg-slate-800 text-slate-200">E / Q</kbd> Menu / Quests</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="text-[10px] text-slate-500 pixel-font">PRESS START TO AWAKEN YOUR STAND</div>
-        </div>
-
         <!-- Top HUD Bar -->
         <div class="relative z-20 flex justify-between items-center px-4 py-2 bg-slate-950/90 border-b border-purple-900/50 backdrop-blur-md">
             <!-- Stats -->
@@ -187,7 +130,6 @@
                     <button onclick="togglePauseMenu()" class="pixel-font text-xs bg-purple-800 hover:bg-purple-700 text-white py-2 rounded border border-purple-500 transition">RESUME</button>
                     <button onclick="toggleStandMenu()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 py-2 rounded border border-slate-600 transition">STANDS</button>
                     <button onclick="toggleQuestLog()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 py-2 rounded border border-slate-600 transition">QUESTS</button>
-                    <button onclick="returnToMainMenu()" class="pixel-font text-xs bg-red-900/80 hover:bg-red-800 text-red-200 py-2 rounded border border-red-600 transition">MAIN MENU</button>
                 </div>
             </div>
             <!-- Manga Sound FX Popups Container -->
@@ -475,7 +417,6 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        let inMainMenu = true;
         let isPaused = false;
         let currentRoom = 1;
         let currentRoomType = 'combat'; // combat, blessing, merchant, fount, challenge, shrine, boss
@@ -502,22 +443,6 @@
         let inventoryItems = { heavensDiary: false, greenBaby: false };
         let playerBlessingBonus = 1.0;
         const keys = { a: false, d: false };
-
-        function startGame() {
-            audio.init();
-            audio.playUltimate();
-            inMainMenu = false;
-            document.getElementById('main-menu').classList.add('hidden');
-            loadRoom(1, 'combat');
-        }
-
-        function returnToMainMenu() {
-            inMainMenu = true;
-            isPaused = false;
-            document.getElementById('pause-modal').classList.add('hidden');
-            document.getElementById('main-menu').classList.remove('hidden');
-        }
-
         class Player {
             constructor() {
                 this.x = 60;
@@ -537,6 +462,7 @@
                 this.hp = 100;
                 this.invulnerable = false;
                 this.iFrameTimer = 0;
+                this.spawnInvincibilityTimer = 0; // Spawn invincibility timer
                 this.comboStep = 0;
                 this.comboTimer = 0;
                 this.isAttacking = false;
@@ -548,14 +474,27 @@
                 this.trail = [];
                 this.history = [];
             }
+            grantSpawnInvincibility() {
+                this.invulnerable = true;
+                this.spawnInvincibilityTimer = 150; // ~2.5 seconds (60 FPS)
+                spawnMangaText(this.x, this.y - 15, "INVINCIBLE!", "#06b6d4");
+            }
             update() {
-                if (isPaused || inMainMenu) return;
+                if (isPaused) return;
                 this.history.push({ x: this.x, y: this.y, hp: this.hp });
                 if (this.history.length > 60) this.history.shift();
-                if (this.iFrameTimer > 0) {
+                
+                if (this.spawnInvincibilityTimer > 0) {
+                    this.spawnInvincibilityTimer--;
+                    this.invulnerable = true;
+                    if (this.spawnInvincibilityTimer <= 0 && this.iFrameTimer <= 0) {
+                        this.invulnerable = false;
+                    }
+                } else if (this.iFrameTimer > 0) {
                     this.iFrameTimer--;
                     if (this.iFrameTimer <= 0) this.invulnerable = false;
                 }
+
                 if (this.comboTimer > 0) {
                     this.comboTimer--;
                     if (this.comboTimer <= 0) this.comboStep = 0;
@@ -586,8 +525,18 @@
                 this.checkHorizontalCollisions();
                 this.y += this.vy;
                 this.checkVerticalCollisions();
-                if (this.x < 0) this.x = 0;
-                if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+                
+                // Astral Ascent Room Wall Detection
+                if (enemies.every(e => e.dead)) {
+                    if (this.x <= 5 || this.x + this.width >= canvas.width - 5) {
+                        triggerRoomChoice();
+                        if (this.x <= 5) this.x = 10;
+                        if (this.x + this.width >= canvas.width - 5) this.x = canvas.width - this.width - 10;
+                    }
+                } else {
+                    if (this.x < 0) this.x = 0;
+                    if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+                }
                 
                 hazards.forEach(h => {
                     if (this.x + this.width > h.x && this.x < h.x + h.w && this.y + this.height > h.y && this.y < h.y + h.h) {
@@ -603,7 +552,7 @@
                 this.trail = this.trail.filter(t => t.alpha > 0);
             }
             jump() {
-                if (isPaused || inMainMenu) return;
+                if (isPaused) return;
                 if (this.jumpsLeft > 0) {
                     if (this.jumpsLeft === this.maxJumps) {
                         audio.playJump();
@@ -628,7 +577,7 @@
                 }
             }
             dash() {
-                if (isPaused || inMainMenu) return;
+                if (isPaused) return;
                 this.vx = this.facing * 9.5;
                 this.invulnerable = true;
                 this.iFrameTimer = 14;
@@ -706,6 +655,14 @@
                     ctx.fillStyle = `rgba(15, 12, 25, ${t.alpha})`;
                     ctx.fillRect(t.x, t.y, this.width, this.height);
                 });
+                
+                // Spawn Invincibility Visual Aura
+                if (this.spawnInvincibilityTimer > 0) {
+                    ctx.strokeStyle = '#06b6d4';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(this.x - 3, this.y - 3, this.width + 6, this.height + 6);
+                }
+
                 ctx.fillStyle = this.invulnerable ? 'rgba(255, 255, 255, 0.8)' : '#0d0d15';
                 ctx.fillRect(this.x, this.y, this.width, this.height);
                 ctx.fillStyle = STANDS[activeStandKey].color;
@@ -770,7 +727,7 @@
                 this.vy = 0;
             }
             update() {
-                if (this.dead || globalTimeFrozen || isPaused || inMainMenu) return;
+                if (this.dead || globalTimeFrozen || isPaused) return;
                 if (this.gravityTimer > 0) {
                     this.gravityTimer--;
                     if (this.gravityTimer <= 0) this.gravityInverted = false;
@@ -907,7 +864,7 @@
                 this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.damage = damage; this.color = color; this.active = true;
             }
             update() {
-                if (!this.active || globalTimeFrozen || isPaused || inMainMenu) return;
+                if (!this.active || globalTimeFrozen || isPaused) return;
                 this.x += this.vx;
                 this.y += this.vy;
                 if (Math.abs(player.x - this.x) < 12 && Math.abs(player.y - this.y) < 18) {
@@ -933,7 +890,7 @@
                 this.life = 120;
             }
             update() {
-                if (!this.active || isPaused || inMainMenu) return;
+                if (!this.active || isPaused) return;
                 this.x += this.vx;
                 this.y += this.vy;
                 this.life--;
@@ -981,7 +938,6 @@
         let enemies = [];
         let chests = [];
         function togglePauseMenu() {
-            if (inMainMenu) return;
             isPaused = !isPaused;
             const modal = document.getElementById('pause-modal');
             if (isPaused) modal.classList.remove('hidden');
@@ -1024,6 +980,10 @@
             player.x = 40;
             player.y = 220;
             player.deniedFateUsed = false;
+            
+            // Temporary spawn invincibility when entering room
+            player.grantSpawnInvincibility();
+
             platforms.push({ x: 0, y: 310, w: 640, h: 50 });
             if (type === 'fount') {
                 player.hp = player.maxHp;
@@ -1068,7 +1028,7 @@
             });
         }
         function useHealingPotion() {
-            if (isPaused || inMainMenu) return;
+            if (isPaused) return;
             if (healCharges <= 0) {
                 spawnMangaText(player.x, player.y - 15, "NO HEALS!", "#ff0055");
                 return;
@@ -1113,7 +1073,7 @@
             updateHUD();
         }
         function executeM1Attack() {
-            if (player.isAttacking || isPaused || inMainMenu) return;
+            if (player.isAttacking || isPaused) return;
             player.isAttacking = true;
             player.comboStep = (player.comboStep % 4) + 1;
             player.comboTimer = 25;
@@ -1146,7 +1106,7 @@
             setTimeout(() => { player.isAttacking = false; }, 120);
         }
         function executeAbility(slotIndex) {
-            if (isPaused || inMainMenu) return;
+            if (isPaused) return;
             const stand = STANDS[activeStandKey];
             const ability = stand.abilities[slotIndex];
             if (!ability || ability.timer > 0) return;
@@ -1318,7 +1278,6 @@
             }
         }
         function toggleQuestLog() {
-            if (inMainMenu) return;
             const modal = document.getElementById('quest-modal');
             const list = document.getElementById('quest-list');
             if (modal.classList.contains('hidden')) {
@@ -1333,7 +1292,7 @@
                     card.innerHTML = `
                         <div class="flex justify-between items-center mb-1">
                             <span class="pixel-font text-xs text-amber-300">${q.title}</span>
-                            <span class="pixel-font text-[9px] ${canEvolve ? 'text-emerald-400' : 'text-slate-400'}">${q.killsCurrent}/${q.killsReq} KILLS</span>
+                            <span class="pixel-font text-[9px] ${canEvolve?'text-emerald-400':'text-slate-400'}">${q.killsCurrent}/${q.killsReq} KILLS</span>
                         </div>
                         <div class="text-[11px] text-slate-400 mb-2">${q.description}</div>
                         <div class="flex justify-between items-center text-[10px]">
@@ -1363,7 +1322,6 @@
             }
         }
         function toggleStandMenu() {
-            if (inMainMenu) return;
             const modal = document.getElementById('stand-modal');
             const list = document.getElementById('stand-list');
             
@@ -1409,7 +1367,8 @@
         function respawnPlayer() {
             player.hp = player.maxHp;
             healCharges = maxHealCharges;
-            loadRoom(1, 'combat');
+            // Localized Respawn: reloads the exact same room ID and room type
+            loadRoom(currentRoom, currentRoomType);
         }
         // Draw Gothic Atmospheric Background
         function drawGothicBackground() {
@@ -1470,7 +1429,6 @@
             mouseCanvasY = ((e.clientY - rect.top) / rect.height) * canvas.height;
         });
         canvas.addEventListener('mousedown', e => {
-            if (inMainMenu) return;
             audio.init();
             const rect = canvas.getBoundingClientRect();
             const mouseX = ((e.clientX - rect.left) / rect.width) * canvas.width;
@@ -1484,7 +1442,6 @@
         });
         canvas.addEventListener('contextmenu', e => e.preventDefault());
         window.addEventListener('keydown', e => {
-            if (inMainMenu) return;
             audio.init();
             const k = e.key.toLowerCase();
             if (e.key === 'Escape') {
@@ -1516,75 +1473,69 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             // Render Gothic Atmosphere Background
             drawGothicBackground();
-            
-            if (!inMainMenu) {
-                const stand = STANDS[activeStandKey];
-                const cdMultiplier = activeStandKey === 'MIH' ? 2.5 : 1.0;
-                stand.abilities.forEach(ab => {
-                    if (ab.timer > 0) {
-                        ab.timer -= (1 / 60) * cdMultiplier;
-                        if (ab.timer < 0) ab.timer = 0;
-                    }
-                });
-                if (activeStandKey === 'TUSK_ACT_4') {
-                    const st = STANDS.TUSK_ACT_4;
-                    if (st.currentAmmo < st.maxAmmo) {
-                        st.ammoRegenTimer += 1 / 60;
-                        if (st.ammoRegenTimer >= 1.5) {
-                            st.currentAmmo++;
-                            st.ammoRegenTimer = 0;
-                            updateHUD();
-                        }
+            const stand = STANDS[activeStandKey];
+            const cdMultiplier = activeStandKey === 'MIH' ? 2.5 : 1.0;
+            stand.abilities.forEach(ab => {
+                if (ab.timer > 0) {
+                    ab.timer -= (1 / 60) * cdMultiplier;
+                    if (ab.timer < 0) ab.timer = 0;
+                }
+            });
+            if (activeStandKey === 'TUSK_ACT_4') {
+                const st = STANDS.TUSK_ACT_4;
+                if (st.currentAmmo < st.maxAmmo) {
+                    st.ammoRegenTimer += 1 / 60;
+                    if (st.ammoRegenTimer >= 1.5) {
+                        st.currentAmmo++;
+                        st.ammoRegenTimer = 0;
+                        updateHUD();
                     }
                 }
-                player.update();
-                enemies.forEach(e => e.update());
-                projectiles.forEach(p => p.update());
-                enemyProjectiles.forEach(ep => ep.update());
-                chests.forEach(c => {
-                    if (!c.opened && Math.abs(player.x - c.x) < 20 && Math.abs(player.y - c.y) < 20) {
-                        c.open();
-                    }
-                });
-                if (enemies.every(e => e.dead) && player.x > canvas.width - 25) {
-                    triggerRoomChoice();
-                    player.x = canvas.width - 30;
-                }
-                // Draw Detailed Gothic Stone Platforms
-                platforms.forEach(p => {
-                    ctx.fillStyle = '#1e1b2e';
-                    ctx.fillRect(p.x, p.y, p.w, p.h);
-                    ctx.strokeStyle = '#4c1d95';
-                    ctx.strokeRect(p.x, p.y, p.w, p.h);
-                    // Carved Top Pattern
-                    ctx.fillStyle = '#2d264a';
-                    ctx.fillRect(p.x, p.y, p.w, 3);
-                });
-                // Draw Hazards (Spikes)
-                ctx.fillStyle = '#ef4444';
-                hazards.forEach(h => {
-                    for (let i = 0; i < h.w; i += 10) {
-                        ctx.beginPath();
-                        ctx.moveTo(h.x + i, h.y + h.h);
-                        ctx.lineTo(h.x + i + 5, h.y);
-                        ctx.lineTo(h.x + i + 10, h.y + h.h);
-                        ctx.fill();
-                    }
-                });
-                chests.forEach(c => c.draw());
-                enemies.forEach(e => e.draw());
-                projectiles.forEach(p => p.draw());
-                enemyProjectiles.forEach(ep => ep.draw());
-                player.draw();
-                if (activeStandKey.startsWith('TUSK')) {
-                    ctx.strokeStyle = '#f472b6';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.arc(mouseCanvasX, mouseCanvasY, 6, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-                updateHUD();
             }
+            player.update();
+            enemies.forEach(e => e.update());
+            projectiles.forEach(p => p.update());
+            enemyProjectiles.forEach(ep => ep.update());
+            chests.forEach(c => {
+                if (!c.opened && Math.abs(player.x - c.x) < 20 && Math.abs(player.y - c.y) < 20) {
+                    c.open();
+                }
+            });
+            
+            // Draw Detailed Gothic Stone Platforms
+            platforms.forEach(p => {
+                ctx.fillStyle = '#1e1b2e';
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.strokeStyle = '#4c1d95';
+                ctx.strokeRect(p.x, p.y, p.w, p.h);
+                // Carved Top Pattern
+                ctx.fillStyle = '#2d264a';
+                ctx.fillRect(p.x, p.y, p.w, 3);
+            });
+            // Draw Hazards (Spikes)
+            ctx.fillStyle = '#ef4444';
+            hazards.forEach(h => {
+                for (let i = 0; i < h.w; i += 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(h.x + i, h.y + h.h);
+                    ctx.lineTo(h.x + i + 5, h.y);
+                    ctx.lineTo(h.x + i + 10, h.y + h.h);
+                    ctx.fill();
+                }
+            });
+            chests.forEach(c => c.draw());
+            enemies.forEach(e => e.draw());
+            projectiles.forEach(p => p.draw());
+            enemyProjectiles.forEach(ep => ep.draw());
+            player.draw();
+            if (activeStandKey.startsWith('TUSK')) {
+                ctx.strokeStyle = '#f472b6';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(mouseCanvasX, mouseCanvasY, 6, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            updateHUD();
             requestAnimationFrame(gameLoop);
         }
         window.onload = () => {
