@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JoJo's Bizarre Ascent: Stardust Requiem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #030308;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
+        
+        .crt-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 40;
+        }
+        
+        canvas#gameCanvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .glow-red { text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055; }
+        .glow-gold { text-shadow: 0 0 10px #ffcc00, 0 0 20px #ffcc00; }
+        .glow-purple { text-shadow: 0 0 10px #a855f7, 0 0 20px #a855f7; }
+        .glow-cyan { text-shadow: 0 0 10px #06b6d4, 0 0 20px #06b6d4; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #09090e; }
+        ::-webkit-scrollbar-thumb { background: #334; border-radius: 3px; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center h-screen w-screen m-0 p-0 bg-slate-950 overflow-hidden select-none">
+    <!-- Main Game Container -->
+    <div id="game-container" class="relative w-full max-w-5xl h-[680px] bg-slate-900 rounded-xl border-2 border-purple-900/70 shadow-[0_0_60px_rgba(168,85,247,0.25)] overflow-hidden flex flex-col">
+        
+        <!-- CRT Overlay -->
+        <div class="crt-overlay"></div>
+        <!-- Top HUD Bar -->
+        <div class="relative z-20 flex justify-between items-center px-4 py-2 bg-slate-950/90 border-b border-purple-900/50 backdrop-blur-md">
+            <!-- Stats -->
+            <div class="flex items-center gap-5">
+                <!-- HP & Stand Info -->
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <span id="stand-badge" class="pixel-font text-[9px] px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-700">KING CRIMSON REQUIEM</span>
+                        <span id="player-hp-text" class="pixel-font text-[10px] text-red-400">100/100 HP</span>
+                    </div>
+                    <!-- Health Bar -->
+                    <div class="w-44 h-3 bg-slate-800 rounded-full mt-1 p-0.5 border border-slate-700 relative overflow-hidden">
+                        <div id="hp-bar-fill" class="h-full bg-gradient-to-r from-red-600 via-pink-600 to-amber-500 rounded-full w-full transition-all duration-200"></div>
+                    </div>
+                </div>
+                <!-- Mana / Healing / Items -->
+                <div class="flex items-center gap-3 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <!-- Heal Charges Button -->
+                    <button id="heal-btn" onclick="useHealingPotion()" class="flex items-center gap-1.5 bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-600/60 text-emerald-300 px-2 py-1 rounded transition group" title="Press H to Heal">
+                        <span class="text-base group-hover:scale-125 transition-transform">🧪</span>
+                        <div class="flex flex-col items-start leading-none">
+                            <span class="pixel-font text-[8px] text-emerald-400">HEAL [H]</span>
+                            <span id="heal-charges-text" class="pixel-font text-[9px] text-emerald-200">3/3</span>
+                        </div>
+                    </button>
+                    <!-- Inventory Currencies & Key Items -->
+                    <div class="flex items-center gap-3 pl-2 border-l border-slate-800">
+                        <div class="flex items-center gap-1" title="Stardust Coins">
+                            <span class="text-amber-400 text-sm">✨</span>
+                            <span id="dust-count" class="pixel-font text-xs text-amber-300">0</span>
+                        </div>
+                        <div class="flex items-center gap-1" title="Stand Arrows">
+                            <span class="text-cyan-400 text-sm">🏹</span>
+                            <span id="arrow-count" class="pixel-font text-xs text-cyan-300">1</span>
+                        </div>
+                        <div class="flex items-center gap-1" title="Corpse Parts">
+                            <span class="text-rose-400 text-sm">🦴</span>
+                            <span id="corpse-count" class="pixel-font text-xs text-rose-300">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Navigation & Navigation Buttons -->
+            <div class="flex items-center gap-3">
+                <div class="text-right">
+                    <div class="pixel-font text-[10px] text-purple-400" id="room-title">FLOOR 1 - ROOM 1</div>
+                    <div class="text-xs text-slate-400" id="enemy-count">Enemies: 0</div>
+                </div>
+                <button onclick="toggleQuestLog()" class="pixel-font text-[9px] bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 px-2.5 py-2 rounded border border-amber-600/60 transition">QUESTS [Q]</button>
+                <button onclick="toggleStandMenu()" class="pixel-font text-[9px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 px-2.5 py-2 rounded border border-purple-500/50 transition">STANDS [E]</button>
+            </div>
+        </div>
+        <!-- Canvas Viewport -->
+        <div class="relative flex-1 bg-black overflow-hidden flex items-center justify-center">
+            <canvas id="gameCanvas" width="640" height="360" class="block"></canvas>
+            <!-- Ability Flash Overlay -->
+            <div id="flash-overlay" class="absolute inset-0 pointer-events-none transition-opacity duration-300 opacity-0 z-30"></div>
+            
+            <!-- Epitaph Foresight Frame -->
+            <div id="epitaph-vision" class="absolute top-4 right-4 border-2 border-red-500 bg-black/90 p-2.5 rounded-lg shadow-lg shadow-red-900/60 hidden z-40 max-w-xs transition-all duration-300">
+                <div class="pixel-font text-[9px] text-red-400 mb-1 flex justify-between items-center">
+                    <span>EPITAPH FORESIGHT</span>
+                    <span class="animate-pulse bg-red-900/80 px-1 rounded text-red-200">ACTIVE</span>
+                </div>
+                <div id="epitaph-desc" class="text-xs text-red-200 font-semibold">Incoming Attack Detected! Double jump or attack to trigger counter!</div>
+            </div>
+            <!-- Room Choice Selection Overlay -->
+            <div id="room-choice-modal" class="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center hidden p-6">
+                <div class="pixel-font text-sm text-cyan-400 mb-2 glow-cyan">ASTRAL ASCENT DOORWAYS</div>
+                <p class="text-xs text-slate-300 mb-6 text-center max-w-md">Choose your path to ascend to the next chamber:</p>
+                
+                <div id="doorway-container" class="flex gap-4 max-w-2xl w-full justify-center">
+                    <!-- Dynamic Doors Added Here -->
+                </div>
+            </div>
+            <!-- Pause Menu Modal -->
+            <div id="pause-modal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center hidden p-6">
+                <div class="pixel-font text-base text-purple-400 mb-2 glow-purple">GAME PAUSED</div>
+                <p class="text-xs text-slate-400 mb-6 text-center">Press ESC or resume to continue your ascent.</p>
+                <div class="flex flex-col gap-3 w-48">
+                    <button onclick="togglePauseMenu()" class="pixel-font text-xs bg-purple-800 hover:bg-purple-700 text-white py-2 rounded border border-purple-500 transition">RESUME</button>
+                    <button onclick="toggleStandMenu()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 py-2 rounded border border-slate-600 transition">STANDS</button>
+                    <button onclick="toggleQuestLog()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 py-2 rounded border border-slate-600 transition">QUESTS</button>
+                </div>
+            </div>
+            <!-- Manga Sound FX Popups Container -->
+            <div id="manga-text-container" class="absolute inset-0 pointer-events-none z-40 overflow-hidden"></div>
+        </div>
+        <!-- Bottom Action / Controls Guide Bar -->
+        <div class="relative z-20 flex items-center justify-between px-4 py-2 bg-slate-950/95 border-t border-purple-900/50">
+            <!-- Key Guides -->
+            <div class="text-[11px] text-slate-400 flex items-center gap-2">
+                <span><kbd class="px-1 bg-slate-800 rounded border border-slate-700 text-slate-200">A/D</kbd> Move</span>
+                <span><kbd class="px-1 bg-slate-800 rounded border border-slate-700 text-slate-200">W/Space</kbd> Jump + <b>Double Jump</b></span>
+                <span><kbd class="px-1 bg-slate-800 rounded border border-slate-700 text-slate-200">Shift</kbd> Dash</span>
+                <span><kbd class="px-1 bg-slate-800 rounded border border-slate-700 text-slate-200">L-Click / J</kbd> M1 Combo</span>
+                <span><kbd class="px-1 bg-slate-800 rounded border border-slate-700 text-slate-200">ESC</kbd> Pause</span>
+            </div>
+            <!-- Ability Hotbar Slots -->
+            <div class="flex items-center gap-2" id="ability-bar"></div>
+        </div>
+        <!-- Quest Log Modal -->
+        <div id="quest-modal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center hidden p-6">
+            <div class="pixel-font text-base text-amber-400 mb-1 glow-gold">HEAVEN & EVOLUTION QUEST LOG</div>
+            <p class="text-xs text-slate-400 mb-4 text-center max-w-md">Fulfill the sacred conditions to evolve your Stands into High Reality Forms!</p>
+            
+            <div id="quest-list" class="flex flex-col gap-3 max-w-xl w-full mb-5 max-h-[360px] overflow-y-auto pr-2">
+                <!-- Quests loaded dynamically -->
+            </div>
+            <button onclick="toggleQuestLog()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-6 py-2 rounded border border-slate-600 transition">CLOSE [ESC]</button>
+        </div>
+        <!-- Stand Awakening Chamber Modal -->
+        <div id="stand-modal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center hidden p-6">
+            <div class="pixel-font text-base text-purple-400 mb-1 glow-purple">STAND AWAKENING CHAMBER</div>
+            <p class="text-xs text-slate-400 mb-4 text-center max-w-md">Piercing yourself with Stand Arrows or Sacred Corpse Parts unlocks new Stand spirits.</p>
+            
+            <div id="stand-list" class="grid grid-cols-2 gap-3 max-w-2xl w-full mb-5 max-h-[380px] overflow-y-auto pr-1">
+                <!-- Stand Cards Inserted Here -->
+            </div>
+            <button onclick="toggleStandMenu()" class="pixel-font text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-6 py-2 rounded border border-slate-600 transition">CLOSE [ESC]</button>
+        </div>
+    </div>
+    <script>
+        class SoundEngine {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            playJump() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(380, this.ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.12);
+            }
+            playDoubleJump() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(680, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+            }
+            playSpin() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1100, this.ctx.currentTime + 0.18);
+                gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.18);
+            }
+            playHeal() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554, now + 0.08);
+                osc.frequency.setValueAtTime(659, now + 0.16);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(now + 0.35);
+            }
+            playPunch() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.09);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.09);
+            }
+            playGravityShift() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.35);
+                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.35);
+            }
+            playTimeStop() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(700, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.6);
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.7);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.7);
+            }
+            playTimeErase() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(90, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(520, this.ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.45);
+            }
+            playEpitaph() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(1200, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.25);
+            }
+            playUltimate() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(50, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(350, this.ctx.currentTime + 0.3);
+                osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 1.0);
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.0);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 1.0);
+            }
+        }
+        const audio = new SoundEngine();
+        const QUESTS = {
+            THE_WORLD_OVER_HEAVEN: {
+                id: "THE_WORLD_OVER_HEAVEN", title: "36 Sinners' Souls to Over Heaven", reqStand: "THE_WORLD",
+                killsReq: 36, killsCurrent: 0, needItem: "Heaven's Diary", rewardStand: "TWOH",
+                description: "Defeat 36 enemies with The World active & obtain 'Heaven's Diary' from Boss Chests."
+            },
+            GREEN_BABY_CMOON: {
+                id: "GREEN_BABY_CMOON", title: "The Green Baby & Gravitational Birth", reqStand: "WHITESNAKE",
+                killsReq: 15, killsCurrent: 0, needItem: "Green Baby", rewardStand: "CMOON",
+                description: "Plunder 15 enemies with Whitesnake & locate the Green Baby item."
+            },
+            MADE_IN_HEAVEN: {
+                id: "MADE_IN_HEAVEN", title: "New Moon Universal Gravitation", reqStand: "CMOON",
+                killsReq: 25, killsCurrent: 0, needItem: "Corpse Part", rewardStand: "MIH",
+                description: "Invert 25 enemies with C-Moon & acquire 1 Sacred Corpse Part."
+            },
+            TUSK_ACT_2: {
+                id: "TUSK_ACT_2", title: "Golden Rectangle Mastery", reqStand: "TUSK_ACT_1",
+                killsReq: 10, killsCurrent: 0, needItem: "Corpse Part", rewardStand: "TUSK_ACT_2",
+                description: "Hit 10 nail shots with Tusk Act 1 & hold 1 Sacred Corpse Part."
+            },
+            TUSK_ACT_3: {
+                id: "TUSK_ACT_3", title: "Spatial Hole Traversal", reqStand: "TUSK_ACT_2",
+                killsReq: 15, killsCurrent: 0, needItem: "Corpse Part", rewardStand: "TUSK_ACT_3",
+                description: "Defeat 15 foes with Act 2 & hold 1 Sacred Corpse Part."
+            },
+            TUSK_ACT_4: {
+                id: "TUSK_ACT_4", title: "Infinite Rotation Golden Spin", reqStand: "TUSK_ACT_3",
+                killsReq: 25, killsCurrent: 0, needItem: "Corpse Part", rewardStand: "TUSK_ACT_4",
+                description: "Master Spin spatial holes & hold 2 Sacred Corpse Parts."
+            }
+        };
+        const STANDS = {
+            KCR: {
+                name: "King Crimson Requiem", color: "#ff0055", aura: "rgba(255, 0, 85, 0.4)", unlocked: true,
+                description: "Master of Causality & Fate. Erases time, predicts attacks with Epitaph, and reverses fatal blows.",
+                abilities: [
+                    { id: 1, name: "Time Erasure", key: "1", cd: 8, timer: 0, desc: "Erase 1.5s time. Freeze enemies & queue attacks." },
+                    { id: 2, name: "Epitaph", key: "2", cd: 6, timer: 0, desc: "Red foresight afterimage. Evades incoming damage!" },
+                    { id: 3, name: "Causality Break", key: "3", cd: 10, timer: 0, desc: "Mark enemy. Player damage redirects to target." },
+                    { id: 4, name: "Crimson Step", key: "4", cd: 3, timer: 0, desc: "Teleport dash with afterimage." },
+                    { id: 5, name: "King's Verdict", key: "R", cd: 18, timer: 0, desc: "ULTIMATE: Freeze time & strike marked foes simultaneously!" }
+                ]
+            },
+            THE_WORLD: {
+                name: "The World", color: "#ffcc00", aura: "rgba(255, 204, 0, 0.4)", unlocked: true,
+                description: "Temporal combat stand capable of stopping time completely.",
+                abilities: [
+                    { id: 1, name: "Muda Barrage", key: "1", cd: 4, timer: 0, desc: "High-speed golden punches." },
+                    { id: 2, name: "Knife Flurry", key: "2", cd: 5, timer: 0, desc: "Throws a fan of high velocity knives." },
+                    { id: 3, name: "Road Roller", key: "3", cd: 12, timer: 0, desc: "Crush zone with heavy impact." },
+                    { id: 4, name: "Time Stop", key: "4", cd: 15, timer: 0, desc: "Freeze time for 3.5 seconds!" }
+                ]
+            },
+            TWOH: {
+                name: "The World Over Heaven", color: "#ffffff", aura: "rgba(255, 255, 255, 0.6)", unlocked: false,
+                description: "Overwrites reality itself. Restores HP on hits and unleashes divine smite.",
+                abilities: [
+                    { id: 1, name: "Overwrite Punch", key: "1", cd: 3, timer: 0, desc: "True damage punch that restores 12 HP." },
+                    { id: 2, name: "Heaven's Smite", key: "2", cd: 6, timer: 0, desc: "Smite foes with divine lightning bolts." },
+                    { id: 3, name: "Reality Rewind", key: "3", cd: 10, timer: 0, desc: "Restore 40 HP instantly." },
+                    { id: 4, name: "Infinite Time Stop", key: "4", cd: 20, timer: 0, desc: "Freeze & disintegrate room enemies." }
+                ]
+            },
+            WHITESNAKE: {
+                name: "Whitesnake", color: "#cbd5e1", aura: "rgba(203, 213, 225, 0.4)", unlocked: true,
+                description: "Plunders DISC memories and blinds target foes.",
+                abilities: [
+                    { id: 1, name: "DISC Plunder", key: "1", cd: 4, timer: 0, desc: "Extract DISC to stun & deal 25 damage." },
+                    { id: 2, name: "Melt Illusion", key: "2", cd: 6, timer: 0, desc: "Acid mist blinding enemy sight." },
+                    { id: 3, name: "Command DISC", key: "3", cd: 9, timer: 0, desc: "Force enemy to strike adjacent allies." }
+                ]
+            },
+            CMOON: {
+                name: "C-Moon", color: "#10b981", aura: "rgba(16, 185, 129, 0.4)", unlocked: false,
+                description: "Controls gravitational force. Flips room gravity and repels enemy hitboxes.",
+                abilities: [
+                    { id: 1, name: "Surface Inversion", key: "1", cd: 4, timer: 0, desc: "Invert punch inside out for massive knockback." },
+                    { id: 2, name: "Gravitational Shift", key: "2", cd: 8, timer: 0, desc: "Flip enemy gravity ceiling-ward for 3 seconds!" },
+                    { id: 3, name: "Gravitational Repulsion", key: "3", cd: 10, timer: 0, desc: "Repel all nearby enemy attacks." }
+                ]
+            },
+            MIH: {
+                name: "Made in Heaven", color: "#06b6d4", aura: "rgba(6, 182, 212, 0.5)", unlocked: false,
+                description: "Accelerates time to infinity. Extreme speed with instant cooldown resets.",
+                abilities: [
+                    { id: 1, name: "Accel Dash", key: "1", cd: 2, timer: 0, desc: "Hyper-speed line slice through enemies." },
+                    { id: 2, name: "Spatial Cut", key: "2", cd: 4, timer: 0, desc: "High velocity shockwave." },
+                    { id: 3, name: "Time Acceleration", key: "3", cd: 14, timer: 0, desc: "Accelerate time: abilities reset instantly!" }
+                ]
+            },
+            TUSK_ACT_1: {
+                name: "Tusk Act 1", color: "#f472b6", aura: "rgba(244, 114, 182, 0.4)", unlocked: true,
+                description: "Fires spinning fingernail bullets towards mouse cursor position.",
+                abilities: [
+                    { id: 1, name: "Nail Bullet", key: "1", cd: 0.8, timer: 0, desc: "Aimed spin bullet (8 dmg)." },
+                    { id: 2, name: "Spin Flurry", key: "2", cd: 3.5, timer: 0, desc: "Fan of 3 cursor-aimed spin bullets." }
+                ]
+            },
+            TUSK_ACT_2: {
+                name: "Tusk Act 2", color: "#ec4899", aura: "rgba(236, 72, 153, 0.4)", unlocked: false,
+                description: "Golden Rectangle Spin. High piercing nail bullets aimed at cursor.",
+                abilities: [
+                    { id: 1, name: "Golden Rectangle Nail", key: "1", cd: 1.2, timer: 0, desc: "Piercing cursor bullet (12 dmg)." },
+                    { id: 2, name: "Chasing Hole", key: "2", cd: 4.5, timer: 0, desc: "Spin hole tracks under target enemy." }
+                ]
+            },
+            TUSK_ACT_3: {
+                name: "Tusk Act 3", color: "#db2777", aura: "rgba(219, 39, 119, 0.5)", unlocked: false,
+                description: "Spatial wormhole traversal via nail holes.",
+                abilities: [
+                    { id: 1, name: "Wormhole Shot", key: "1", cd: 2.0, timer: 0, desc: "Wormhole bullet directly to cursor (16 dmg)." },
+                    { id: 2, name: "Wormhole Teleport", key: "2", cd: 5.0, timer: 0, desc: "Teleport user directly to cursor location." }
+                ]
+            },
+            TUSK_ACT_4: {
+                name: "Tusk Act 4", color: "#be185d", aura: "rgba(190, 24, 93, 0.6)", unlocked: false,
+                maxAmmo: 10, currentAmmo: 10, ammoRegenTimer: 0,
+                description: "INFINITE ROTATION. Melee combo on M1, 10 regenerating Golden Ratio nails on E / R-Click.",
+                abilities: [
+                    { id: 1, name: "Golden Spin Rush", key: "1", cd: 2.5, timer: 0, desc: "Cursor barrage of infinite spin bullets." },
+                    { id: 2, name: "Dimensional Tear", key: "2", cd: 6.0, timer: 0, desc: "Tears open rift at cursor position." },
+                    { id: 3, name: "Infinite Rotation Bullet", key: "3", cd: 10.0, timer: 0, desc: "ULTIMATE: Infinite rotation bullet aimed at cursor!" }
+                ]
+            }
+        };
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let isPaused = false;
+        let currentRoom = 1;
+        let currentRoomType = 'combat'; // combat, blessing, merchant, fount, challenge, shrine, boss
+        let stardust = 0;
+        let standArrows = 1;
+        let corpseParts = 0;
+        let activeStandKey = "KCR";
+        
+        let healCharges = 3;
+        let maxHealCharges = 3;
+        
+        let globalTimeFrozen = false;
+        let timeErasureActive = false;
+        let queuedTimeEraseDamage = [];
+        let projectiles = [];
+        let enemyProjectiles = [];
+        let particles = [];
+        let hazards = [];
+        let interactables = [];
+        
+        let mouseCanvasX = 320;
+        let mouseCanvasY = 180;
+        
+        let inventoryItems = { heavensDiary: false, greenBaby: false };
+        let playerBlessingBonus = 1.0;
+        const keys = { a: false, d: false };
+
+        class Player {
+            constructor() {
+                this.x = 60;
+                this.y = 220;
+                this.width = 16;
+                this.height = 28;
+                this.vx = 0;
+                this.vy = 0;
+                this.speed = 3.2;
+                this.jumpForce = -8.2;
+                this.grounded = false;
+                this.facing = 1;
+                
+                this.jumpsLeft = 2;
+                this.maxJumps = 2;
+                this.maxHp = 100;
+                this.hp = 100;
+                this.invulnerable = false;
+                this.iFrameTimer = 0;
+                this.comboStep = 0;
+                this.comboTimer = 0;
+                this.isAttacking = false;
+                this.deniedFateUsed = false;
+                this.epitaphActive = false;
+                this.epitaphTimer = 0;
+                this.causalityMarkedEnemy = null;
+                this.causalityTimer = 0;
+                this.trail = [];
+                this.history = [];
+            }
+            update() {
+                if (isPaused) return;
+                this.history.push({ x: this.x, y: this.y, hp: this.hp });
+                if (this.history.length > 60) this.history.shift();
+                if (this.iFrameTimer > 0) {
+                    this.iFrameTimer--;
+                    if (this.iFrameTimer <= 0) this.invulnerable = false;
+                }
+                if (this.comboTimer > 0) {
+                    this.comboTimer--;
+                    if (this.comboTimer <= 0) this.comboStep = 0;
+                }
+                if (this.epitaphTimer > 0) {
+                    this.epitaphTimer--;
+                    if (this.epitaphTimer <= 0) {
+                        this.epitaphActive = false;
+                        document.getElementById('epitaph-vision').classList.add('hidden');
+                    }
+                }
+                if (this.causalityTimer > 0) {
+                    this.causalityTimer--;
+                    if (this.causalityTimer <= 0) this.causalityMarkedEnemy = null;
+                }
+                const moveSpeed = activeStandKey === 'MIH' ? this.speed * 1.5 : this.speed;
+                if (keys.a) {
+                    this.vx = -moveSpeed;
+                    this.facing = -1;
+                } else if (keys.d) {
+                    this.vx = moveSpeed;
+                    this.facing = 1;
+                } else {
+                    this.vx *= 0.75;
+                }
+                this.vy += 0.45;
+                this.x += this.vx;
+                this.checkHorizontalCollisions();
+                this.y += this.vy;
+                this.checkVerticalCollisions();
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+                
+                hazards.forEach(h => {
+                    if (this.x + this.width > h.x && this.x < h.x + h.w && this.y + this.height > h.y && this.y < h.y + h.h) {
+                        this.takeDamage(12);
+                        this.vy = -5;
+                    }
+                });
+                if (Math.abs(this.vx) > 1 || Math.abs(this.vy) > 2) {
+                    this.trail.push({ x: this.x, y: this.y, alpha: 0.5 });
+                    if (this.trail.length > 6) this.trail.shift();
+                }
+                this.trail.forEach(t => t.alpha -= 0.08);
+                this.trail = this.trail.filter(t => t.alpha > 0);
+            }
+            jump() {
+                if (isPaused) return;
+                if (this.jumpsLeft > 0) {
+                    if (this.jumpsLeft === this.maxJumps) {
+                        audio.playJump();
+                    } else {
+                        audio.playDoubleJump();
+                        spawnMangaText(this.x, this.y, "DOUBLE JUMP!", "#06b6d4");
+                        
+                        for (let i = 0; i < 8; i++) {
+                            particles.push({
+                                x: this.x + this.width / 2,
+                                y: this.y + this.height,
+                                vx: (Math.random() - 0.5) * 3,
+                                vy: Math.random() * 2,
+                                color: STANDS[activeStandKey].color,
+                                alpha: 1.0
+                            });
+                        }
+                    }
+                    this.vy = this.jumpForce;
+                    this.jumpsLeft--;
+                    this.grounded = false;
+                }
+            }
+            dash() {
+                if (isPaused) return;
+                this.vx = this.facing * 9.5;
+                this.invulnerable = true;
+                this.iFrameTimer = 14;
+                spawnMangaText(this.x, this.y, "DASH!", "#a855f7");
+            }
+            checkHorizontalCollisions() {
+                platforms.forEach(p => {
+                    if (this.y + this.height > p.y && this.y < p.y + p.h) {
+                        if (this.vx > 0 && this.x + this.width >= p.x && this.x < p.x) {
+                            this.x = p.x - this.width;
+                        } else if (this.vx < 0 && this.x <= p.x + p.w && this.x + this.width > p.x + p.w) {
+                            this.x = p.x + p.w;
+                        }
+                    }
+                });
+            }
+            checkVerticalCollisions() {
+                this.grounded = false;
+                platforms.forEach(p => {
+                    if (this.x + this.width > p.x && this.x < p.x + p.w) {
+                        if (this.vy > 0 && this.y + this.height >= p.y && this.y < p.y + p.h) {
+                            this.y = p.y - this.height;
+                            this.vy = 0;
+                            this.grounded = true;
+                            this.jumpsLeft = this.maxJumps;
+                        }
+                    }
+                });
+            }
+            takeDamage(amount) {
+                if (this.invulnerable) return;
+                if (this.epitaphActive) {
+                    this.epitaphActive = false;
+                    document.getElementById('epitaph-vision').classList.add('hidden');
+                    spawnMangaText(this.x, this.y - 15, "REJECTED!", "#ff0055");
+                    this.x += this.facing * -40;
+                    this.invulnerable = true;
+                    this.iFrameTimer = 20;
+                    audio.playEpitaph();
+                    return;
+                }
+                if (this.causalityMarkedEnemy && !this.causalityMarkedEnemy.dead) {
+                    spawnMangaText(this.x, this.y - 15, "REDIRECTED!", "#ff0055");
+                    this.causalityMarkedEnemy.takeDamage(amount * 1.4);
+                    return;
+                }
+                this.hp -= amount;
+                audio.playPunch();
+                if (this.hp <= 0 && activeStandKey === 'KCR' && !this.deniedFateUsed) {
+                    this.deniedFateUsed = true;
+                    this.hp = 1;
+                    flashScreen("#ff0033", 400);
+                    spawnMangaText(this.x, this.y - 20, "DENIED FATE!", "#ff0055");
+                    if (this.history.length > 0) {
+                        const past = this.history[0];
+                        this.x = past.x;
+                        this.y = past.y;
+                    }
+                    this.invulnerable = true;
+                    this.iFrameTimer = 40;
+                    audio.playTimeErase();
+                    return;
+                }
+                if (this.hp <= 0) {
+                    this.hp = 0;
+                    respawnPlayer();
+                } else {
+                    this.invulnerable = true;
+                    this.iFrameTimer = 20;
+                }
+                updateHUD();
+            }
+            draw() {
+                this.trail.forEach(t => {
+                    ctx.fillStyle = `rgba(15, 12, 25, ${t.alpha})`;
+                    ctx.fillRect(t.x, t.y, this.width, this.height);
+                });
+                ctx.fillStyle = this.invulnerable ? 'rgba(255, 255, 255, 0.8)' : '#0d0d15';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = STANDS[activeStandKey].color;
+                if (this.facing === 1) {
+                    ctx.fillRect(this.x + 10, this.y + 5, 3, 2);
+                } else {
+                    ctx.fillRect(this.x + 3, this.y + 5, 3, 2);
+                }
+                this.drawStandSpirit();
+            }
+            drawStandSpirit() {
+                const stand = STANDS[activeStandKey];
+                const sx = this.x - (this.facing * 12);
+                const sy = this.y - 4 + Math.sin(Date.now() / 180) * 3;
+                ctx.fillStyle = stand.aura;
+                ctx.beginPath();
+                ctx.arc(sx + 8, sy + 12, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = stand.color;
+                ctx.fillRect(sx, sy, 14, 25);
+                ctx.fillStyle = '#ffffff';
+                if (this.facing === 1) {
+                    ctx.fillRect(sx + 8, sy + 4, 3, 2);
+                } else {
+                    ctx.fillRect(sx + 3, sy + 4, 3, 2);
+                }
+            }
+        }
+
+        class Enemy {
+            constructor(x, y, type = 'vampire') {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.facing = -1;
+                this.dead = false;
+                this.attackTimer = 0;
+                this.markedByKCR = false;
+                this.gravityInverted = false;
+                this.gravityTimer = 0;
+                
+                // Difficulty Multiplier based on Current Room Level
+                const diffScale = 1.0 + (currentRoom - 1) * 0.25;
+
+                if (type === 'boss') {
+                    this.width = 24; this.height = 36; this.hp = Math.round(300 * diffScale); this.maxHp = this.hp; this.speed = 1.6;
+                } else if (type === 'zombie_brute') {
+                    this.width = 22; this.height = 32; this.hp = Math.round(90 * diffScale); this.maxHp = this.hp; this.speed = 0.8;
+                    this.isCharging = false;
+                } else if (type === 'vampire_archer') {
+                    this.width = 16; this.height = 26; this.hp = Math.round(35 * diffScale); this.maxHp = this.hp; this.speed = 1.1;
+                } else if (type === 'fleshbud_zealot') {
+                    this.width = 14; this.height = 22; this.hp = Math.round(25 * diffScale); this.maxHp = this.hp; this.speed = 2.4;
+                } else if (type === 'shadow_assassin') {
+                    this.width = 16; this.height = 26; this.hp = Math.round(40 * diffScale); this.maxHp = this.hp; this.speed = 2.0;
+                    this.teleportCd = 120;
+                } else if (type === 'pillar_sentinel') {
+                    this.width = 18; this.height = 18; this.hp = Math.round(50 * diffScale); this.maxHp = this.hp; this.speed = 1.0;
+                    this.isFlying = true;
+                } else {
+                    this.width = 18; this.height = 28; this.hp = Math.round(45 * diffScale); this.maxHp = this.hp; this.speed = 1.2;
+                }
+                this.vx = 0;
+                this.vy = 0;
+            }
+            update() {
+                if (this.dead || globalTimeFrozen || isPaused) return;
+                if (this.gravityTimer > 0) {
+                    this.gravityTimer--;
+                    if (this.gravityTimer <= 0) this.gravityInverted = false;
+                }
+                const dist = player.x - this.x;
+                this.facing = dist > 0 ? 1 : -1;
+
+                if (this.type === 'pillar_sentinel') {
+                    const targetX = player.x;
+                    const targetY = player.y - 120;
+                    this.vx = (targetX - this.x) * 0.03;
+                    this.vy = (targetY - this.y) * 0.03;
+                    if (this.attackTimer <= 0 && Math.abs(this.x - player.x) < 30) {
+                        this.attackTimer = 110;
+                        enemyProjectiles.push(new EnemyProjectile(this.x + 8, this.y + 18, 0, 5, 14, '#06b6d4'));
+                        spawnMangaText(this.x, this.y, "BEAM!", "#06b6d4");
+                    }
+                } 
+                else if (this.type === 'vampire_archer') {
+                    if (Math.abs(dist) < 140) {
+                        this.vx = -this.facing * this.speed;
+                    } else if (Math.abs(dist) > 220) {
+                        this.vx = this.facing * this.speed;
+                    } else {
+                        this.vx = 0;
+                    }
+                    if (this.attackTimer <= 0) {
+                        this.attackTimer = 90;
+                        const angle = Math.atan2((player.y + 10) - (this.y + 10), (player.x + 8) - (this.x + 8));
+                        enemyProjectiles.push(new EnemyProjectile(this.x + 8, this.y + 10, Math.cos(angle) * 4.5, Math.sin(angle) * 4.5, 12, '#ff0055'));
+                        spawnMangaText(this.x, this.y, "SHOT!", "#ff0055");
+                    }
+                }
+                else if (this.type === 'shadow_assassin') {
+                    if (this.teleportCd > 0) this.teleportCd--;
+                    if (this.teleportCd <= 0 && Math.abs(dist) < 180) {
+                        this.teleportCd = 160;
+                        this.x = player.x - (player.facing * 25);
+                        this.y = player.y;
+                        spawnMangaText(this.x, this.y - 10, "SHADOW SLICE!", "#a855f7");
+                        player.takeDamage(15);
+                    } else {
+                        this.vx = this.facing * this.speed;
+                    }
+                }
+                else if (this.type === 'zombie_brute') {
+                    if (Math.abs(dist) < 120 && !this.isCharging && Math.random() < 0.02) {
+                        this.isCharging = true;
+                        this.vx = this.facing * 4.5;
+                        spawnMangaText(this.x, this.y - 10, "CHARGE!", "#eab308");
+                        setTimeout(() => { this.isCharging = false; }, 600);
+                    } else if (!this.isCharging) {
+                        this.vx = this.facing * this.speed;
+                    }
+                }
+                else {
+                    this.vx = this.facing * this.speed;
+                }
+                if (!this.isFlying) {
+                    if (this.gravityInverted) {
+                        this.vy = -3.5;
+                    } else {
+                        this.vy += 0.45;
+                    }
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    platforms.forEach(p => {
+                        if (this.x + this.width > p.x && this.x < p.x + p.w) {
+                            if (!this.gravityInverted && this.vy > 0 && this.y + this.height >= p.y && this.y < p.y + p.h) {
+                                this.y = p.y - this.height;
+                                this.vy = 0;
+                            }
+                        }
+                    });
+                } else {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                }
+                if (Math.abs(dist) < 20 && Math.abs(player.y - this.y) < 25) {
+                    if (this.attackTimer <= 0) {
+                        const dmg = this.type === 'boss' ? 22 : (this.type === 'zombie_brute' ? 18 : 10);
+                        player.takeDamage(dmg);
+                        this.attackTimer = 50;
+                        if (this.type === 'fleshbud_zealot') {
+                            this.takeDamage(100);
+                            spawnMangaText(this.x, this.y, "BOOM!", "#10b981");
+                        }
+                    }
+                }
+                if (this.attackTimer > 0) this.attackTimer--;
+            }
+            takeDamage(amount) {
+                if (timeErasureActive) {
+                    queuedTimeEraseDamage.push({ enemy: this, damage: amount });
+                    spawnMangaText(this.x, this.y, "QUEUED", "#ffcc00");
+                    return;
+                }
+                this.hp -= amount;
+                spawnMangaText(this.x, this.y, `-${Math.round(amount)}`, "#ff0055");
+                audio.playPunch();
+                if (this.hp <= 0) {
+                    this.dead = true;
+                    stardust += this.type === 'boss' ? 50 : 12;
+                    trackQuestKills();
+                    updateHUD();
+                }
+            }
+            draw() {
+                if (this.dead) return;
+                if (this.markedByKCR) {
+                    ctx.strokeStyle = '#ff0055';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(this.x - 2, this.y - 2, this.width + 4, this.height + 4);
+                }
+                if (this.type === 'boss') ctx.fillStyle = '#581c87';
+                else if (this.type === 'zombie_brute') ctx.fillStyle = '#78350f';
+                else if (this.type === 'vampire_archer') ctx.fillStyle = '#9f1239';
+                else if (this.type === 'fleshbud_zealot') ctx.fillStyle = '#065f46';
+                else if (this.type === 'shadow_assassin') ctx.fillStyle = '#312e81';
+                else if (this.type === 'pillar_sentinel') ctx.fillStyle = '#0891b2';
+                else ctx.fillStyle = '#1e293b';
+                
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(this.x + (this.facing === 1 ? this.width - 4 : 2), this.y + 4, 3, 2);
+                
+                ctx.fillStyle = '#222';
+                ctx.fillRect(this.x, this.y - 6, this.width, 3);
+                ctx.fillStyle = '#ff0055';
+                ctx.fillRect(this.x, this.y - 6, (Math.max(0, this.hp) / this.maxHp) * this.width, 3);
+            }
+        }
+
+        class EnemyProjectile {
+            constructor(x, y, vx, vy, damage, color = '#ff0055') {
+                this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.damage = damage; this.color = color; this.active = true;
+            }
+            update() {
+                if (!this.active || globalTimeFrozen || isPaused) return;
+                this.x += this.vx;
+                this.y += this.vy;
+                if (Math.abs(player.x - this.x) < 12 && Math.abs(player.y - this.y) < 18) {
+                    player.takeDamage(this.damage);
+                    this.active = false;
+                }
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.active = false;
+            }
+            draw() {
+                if (!this.active) return;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - 2, this.y - 2, 5, 5);
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, vx, vy, damage, isTusk = false, color = "#f472b6", pierces = 1) {
+                this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+                this.damage = damage * playerBlessingBonus;
+                this.isTusk = isTusk;
+                this.color = color;
+                this.pierces = pierces;
+                this.active = true;
+                this.life = 120;
+            }
+            update() {
+                if (!this.active || isPaused) return;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+                if (this.life <= 0) this.active = false;
+                enemies.forEach(e => {
+                    if (!e.dead && Math.abs(e.x - this.x) < 14 && Math.abs(e.y - this.y) < 18) {
+                        e.takeDamage(this.damage);
+                        this.pierces--;
+                        if (this.pierces <= 0) this.active = false;
+                    }
+                });
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.active = false;
+            }
+            draw() {
+                if (!this.active) return;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - 3, this.y - 2, 6, 4);
+                if (this.isTusk) {
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.strokeRect(this.x - 3, this.y - 2, 6, 4);
+                }
+            }
+        }
+
+        class Chest {
+            constructor(x, y, type = 'wood') {
+                this.x = x; this.y = y; this.w = 20; this.h = 16; this.type = type; this.opened = false;
+            }
+            open() {
+                if (this.opened) return;
+                this.opened = true;
+                if (this.type === 'wood') stardust += 15;
+                if (this.type === 'gold') { stardust += 30; standArrows += 1; if (Math.random() < 0.5) inventoryItems.greenBaby = true; }
+                if (this.type === 'coffer') { stardust += 50; corpseParts += 1; inventoryItems.heavensDiary = true; }
+                spawnMangaText(this.x, this.y - 10, "LOOT!", "#ffcc00");
+                updateHUD();
+            }
+            draw() {
+                ctx.fillStyle = this.opened ? '#333' : (this.type === 'gold' ? '#eab308' : (this.type === 'coffer' ? '#be185d' : '#854d0e'));
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.strokeStyle = '#000';
+                ctx.strokeRect(this.x, this.y, this.w, this.h);
+            }
+        }
+
+        let platforms = [];
+        let enemies = [];
+        let chests = [];
+
+        function togglePauseMenu() {
+            isPaused = !isPaused;
+            const modal = document.getElementById('pause-modal');
+            if (isPaused) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function triggerRoomChoice() {
+            const modal = document.getElementById('room-choice-modal');
+            const container = document.getElementById('doorway-container');
+            container.innerHTML = '';
+            const availableTypes = [
+                { type: 'combat', label: '⚔️ Combat Arena', color: 'border-red-600 bg-red-950/60' },
+                { type: 'blessing', label: '✨ Astral Blessing', color: 'border-cyan-500 bg-cyan-950/60' },
+                { type: 'merchant', label: '🛒 Stardust Merchant', color: 'border-amber-500 bg-amber-950/60' },
+                { type: 'fount', label: '🧪 Health Fount', color: 'border-emerald-500 bg-emerald-950/60' },
+                { type: 'challenge', label: '⚠️ Spike Challenge', color: 'border-purple-600 bg-purple-950/60' }
+            ];
+            const choices = availableTypes.sort(() => 0.5 - Math.random()).slice(0, 3);
+            choices.forEach(c => {
+                const door = document.createElement('button');
+                door.className = `flex-1 py-6 px-4 rounded-xl border-2 ${c.color} flex flex-col items-center justify-center hover:scale-105 transition-all`;
+                door.innerHTML = `<span class="pixel-font text-xs text-white mb-2">${c.label}</span><span class="text-[10px] text-slate-400">Ascend Doorway</span>`;
+                door.onclick = () => {
+                    modal.classList.add('hidden');
+                    loadRoom(currentRoom + 1, c.type);
+                };
+                container.appendChild(door);
+            });
+            modal.classList.remove('hidden');
+        }
+
+        function loadRoom(roomNum, type = 'combat') {
+            currentRoom = roomNum;
+            currentRoomType = type;
+            platforms = [];
+            enemies = [];
+            chests = [];
+            projectiles = [];
+            enemyProjectiles = [];
+            hazards = [];
+            interactables = [];
+            player.x = 40;
+            player.y = 220;
+            player.deniedFateUsed = false;
+
+            platforms.push({ x: 0, y: 310, w: 640, h: 50 });
+            if (type === 'fount') {
+                player.hp = player.maxHp;
+                healCharges = maxHealCharges;
+                spawnMangaText(320, 150, "HEALTH RESTORED!", "#10b981");
+                audio.playHeal();
+            } else if (type === 'blessing') {
+                playerBlessingBonus += 0.15;
+                spawnMangaText(320, 150, "ASTRAL POWER +15%!", "#06b6d4");
+                audio.playUltimate();
+            } else if (type === 'challenge') {
+                hazards.push({ x: 180, y: 295, w: 120, h: 15 });
+                hazards.push({ x: 380, y: 295, w: 120, h: 15 });
+                platforms.push({ x: 140, y: 230, w: 80, h: 14 });
+                platforms.push({ x: 310, y: 170, w: 80, h: 14 });
+                platforms.push({ x: 480, y: 230, w: 80, h: 14 });
+                enemies.push(new Enemy(320, 120, 'vampire_archer'));
+            }
+            if (roomNum === 3 || type === 'boss') {
+                platforms.push({ x: 200, y: 210, w: 240, h: 14 });
+                enemies.push(new Enemy(320, 160, 'boss'));
+                chests.push(new Chest(550, 294, 'coffer'));
+            } else if (type === 'combat') {
+                platforms.push({ x: 120, y: 240, w: 100, h: 14 });
+                platforms.push({ x: 280, y: 180, w: 120, h: 14 });
+                platforms.push({ x: 460, y: 240, w: 110, h: 14 });
+                enemies.push(new Enemy(150, 200, 'zombie_brute'));
+                enemies.push(new Enemy(310, 140, 'vampire_archer'));
+                enemies.push(new Enemy(480, 200, 'shadow_assassin'));
+                enemies.push(new Enemy(280, 80, 'pillar_sentinel'));
+                chests.push(new Chest(320, 164, 'gold'));
+            }
+            document.getElementById('room-title').innerText = `FLOOR 1 - ROOM ${roomNum} (${type.toUpperCase()})`;
+            updateHUD();
+        }
+
+        function trackQuestKills() {
+            Object.keys(QUESTS).forEach(key => {
+                const q = QUESTS[key];
+                if (q.reqStand === activeStandKey) {
+                    q.killsCurrent++;
+                }
+            });
+        }
+
+        function useHealingPotion() {
+            if (isPaused) return;
+            if (healCharges <= 0) {
+                spawnMangaText(player.x, player.y - 15, "NO HEALS!", "#ff0055");
+                return;
+            }
+            if (player.hp >= player.maxHp) {
+                spawnMangaText(player.x, player.y - 15, "HP FULL!", "#00ffff");
+                return;
+            }
+            healCharges--;
+            const healAmount = Math.round(player.maxHp * 0.35);
+            player.hp = Math.min(player.maxHp, player.hp + healAmount);
+            for (let i = 0; i < 14; i++) {
+                particles.push({
+                    x: player.x + Math.random() * player.width,
+                    y: player.y + Math.random() * player.height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: -Math.random() * 2.5,
+                    color: "#10b981",
+                    alpha: 1.0
+                });
+            }
+            audio.playHeal();
+            spawnMangaText(player.x, player.y - 20, `+${healAmount} HP!`, "#10b981");
+            updateHUD();
+        }
+
+        function fireTuskProjectiles() {
+            const st = STANDS.TUSK_ACT_4;
+            if (st.currentAmmo <= 0) {
+                spawnMangaText(player.x, player.y - 15, "RELOADING NAILS...", "#ff0055");
+                return;
+            }
+            st.currentAmmo--;
+            audio.playSpin();
+            const originX = player.x + (player.facing * 10);
+            const originY = player.y + 10;
+            const angle = Math.atan2(mouseCanvasY - originY, mouseCanvasX - originX);
+            const speed = 7.5;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            projectiles.push(new Projectile(originX, originY, vx, vy, 14, true, st.color, 4));
+            spawnMangaText(player.x, player.y - 15, "GOLDEN SPIN!", st.color);
+            updateHUD();
+        }
+
+        function executeM1Attack() {
+            if (player.isAttacking || isPaused) return;
+            player.isAttacking = true;
+            player.comboStep = (player.comboStep % 4) + 1;
+            player.comboTimer = 25;
+
+            if (activeStandKey.startsWith('TUSK') && activeStandKey !== 'TUSK_ACT_4') {
+                audio.playSpin();
+                const originX = player.x + (player.facing * 10);
+                const originY = player.y + 10;
+                const angle = Math.atan2(mouseCanvasY - originY, mouseCanvasX - originX);
+                const speed = 7.5;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                let dmg = 8;
+                let pierces = 1;
+                if (activeStandKey === 'TUSK_ACT_2') { dmg = 12; pierces = 2; }
+                if (activeStandKey === 'TUSK_ACT_3') { dmg = 16; pierces = 3; }
+                projectiles.push(new Projectile(originX, originY, vx, vy, dmg, true, STANDS[activeStandKey].color, pierces));
+                spawnMangaText(player.x, player.y - 15, "SPIN!", STANDS[activeStandKey].color);
+            } else {
+                const range = 38;
+                const damage = player.comboStep === 4 ? 26 : 12;
+                audio.playPunch();
+                spawnMangaText(player.x + (player.facing * 20), player.y, player.comboStep === 4 ? "DON!" : "ORA!", "#ffcc00");
+                enemies.forEach(enemy => {
+                    if (!enemy.dead && Math.abs(enemy.x - player.x) < range && Math.abs(enemy.y - player.y) < 30) {
+                        enemy.takeDamage(damage);
+                        if (player.comboStep === 4) enemy.vy = -6;
+                    }
+                });
+            }
+            setTimeout(() => { player.isAttacking = false; }, 120);
+        }
+
+        function executeAbility(slotIndex) {
+            if (isPaused) return;
+            const stand = STANDS[activeStandKey];
+            const ability = stand.abilities[slotIndex];
+            if (!ability || ability.timer > 0) return;
+            ability.timer = ability.cd;
+
+            if (activeStandKey === 'KCR') {
+                if (ability.name === "Time Erasure") {
+                    timeErasureActive = true;
+                    globalTimeFrozen = true;
+                    flashScreen("rgba(255, 0, 85, 0.3)", 1500);
+                    spawnMangaText(player.x, player.y - 20, "TIME ERASED!", "#ff0055");
+                    audio.playTimeErase();
+                    setTimeout(() => {
+                        timeErasureActive = false;
+                        globalTimeFrozen = false;
+                        queuedTimeEraseDamage.forEach(q => {
+                            if (!q.enemy.dead) q.enemy.takeDamage(q.damage);
+                        });
+                        queuedTimeEraseDamage = [];
+                        spawnMangaText(player.x, player.y - 20, "TIME RESUMES!", "#ff0055");
+                    }, 1500);
+                }
+                else if (ability.name === "Epitaph") {
+                    player.epitaphActive = true;
+                    player.epitaphTimer = 180;
+                    document.getElementById('epitaph-vision').classList.remove('hidden');
+                    audio.playEpitaph();
+                    spawnMangaText(player.x, player.y - 20, "EPITAPH", "#ff0055");
+                }
+                else if (ability.name === "Causality Break") {
+                    let closest = null, minDist = 200;
+                    enemies.forEach(e => {
+                        if (!e.dead) {
+                            let d = Math.abs(e.x - player.x);
+                            if (d < minDist) { minDist = d; closest = e; }
+                        }
+                    });
+                    if (closest) {
+                        closest.markedByKCR = true;
+                        player.causalityMarkedEnemy = closest;
+                        player.causalityTimer = 240;
+                        spawnMangaText(closest.x, closest.y - 15, "MARKED", "#ff0055");
+                    }
+                }
+                else if (ability.name === "Crimson Step") {
+                    player.x += player.facing * 60;
+                    player.trail.push({ x: player.x, y: player.y, alpha: 1.0 });
+                    spawnMangaText(player.x, player.y, "STEP!", "#ff0055");
+                }
+                else if (ability.name === "King's Verdict") {
+                    const markedEnemies = enemies.filter(e => !e.dead && e.markedByKCR);
+                    if (markedEnemies.length === 0) {
+                        spawnMangaText(player.x, player.y - 15, "MARK TARGET FIRST!", "#ff0055");
+                        ability.timer = 0;
+                        return;
+                    }
+                    flashScreen("rgba(0, 0, 0, 0.85)", 1800);
+                    globalTimeFrozen = true;
+                    audio.playUltimate();
+                    markedEnemies.forEach(e => {
+                        spawnMangaText(e.x, e.y - 20, "FUTURE ENDS HERE.", "#ff0055");
+                        setTimeout(() => { e.takeDamage(75); }, 900);
+                    });
+                    setTimeout(() => {
+                        globalTimeFrozen = false;
+                        spawnMangaText(player.x, player.y - 15, "VERDICT EXECUTED!", "#ff0055");
+                    }, 1800);
+                }
+            }
+            else if (activeStandKey === 'CMOON') {
+                if (ability.name === "Gravitational Shift") {
+                    audio.playGravityShift();
+                    enemies.forEach(e => {
+                        if (!e.dead) {
+                            e.gravityInverted = true;
+                            e.gravityTimer = 180;
+                        }
+                    });
+                    spawnMangaText(player.x, player.y - 20, "GRAVITY INVERT!", "#10b981");
+                }
+            }
+            else if (activeStandKey === 'WHITESNAKE') {
+                if (ability.name === "DISC Plunder") {
+                    enemies.forEach(e => {
+                        if (!e.dead && Math.abs(e.x - player.x) < 50) {
+                            e.takeDamage(28);
+                            spawnMangaText(e.x, e.y - 15, "DISC STOLEN!", "#cbd5e1");
+                        }
+                    });
+                }
+            }
+            else if (activeStandKey === 'MIH') {
+                if (ability.name === "Time Acceleration") {
+                    stand.abilities.forEach(a => a.timer = 0);
+                    flashScreen("rgba(6, 182, 212, 0.4)", 800);
+                    spawnMangaText(player.x, player.y - 20, "MADE IN HEAVEN!", "#06b6d4");
+                }
+            }
+            else if (activeStandKey === 'THE_WORLD') {
+                if (ability.name === "Time Stop") {
+                    globalTimeFrozen = true;
+                    flashScreen("rgba(255, 204, 0, 0.4)", 3500);
+                    audio.playTimeStop();
+                    spawnMangaText(player.x, player.y - 20, "ZA WARUDO!", "#ffcc00");
+                    setTimeout(() => { globalTimeFrozen = false; }, 3500);
+                }
+            }
+        }
+
+        function spawnMangaText(x, y, text, color = "#ff0055") {
+            const container = document.getElementById('manga-text-container');
+            const el = document.createElement('div');
+            el.className = 'absolute pixel-font text-[10px] font-bold pointer-events-none transform -translate-x-1/2 transition-all duration-700 opacity-100 scale-110';
+            
+            const pctX = (x / canvas.width) * 100;
+            const pctY = (y / canvas.height) * 100;
+            el.style.left = `${pctX}%`;
+            el.style.top = `${pctY}%`;
+            el.style.color = color;
+            el.style.textShadow = `0 0 6px ${color}`;
+            el.innerText = text;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.top = `${pctY - 5}%`;
+                el.style.opacity = '0';
+            }, 50);
+            setTimeout(() => { el.remove(); }, 700);
+        }
+
+        function flashScreen(color, durationMs) {
+            const flash = document.getElementById('flash-overlay');
+            flash.style.backgroundColor = color;
+            flash.style.opacity = '1';
+            setTimeout(() => { flash.style.opacity = '0'; }, durationMs);
+        }
+
+        function updateHUD() {
+            document.getElementById('player-hp-text').innerText = `${Math.ceil(player.hp)}/${player.maxHp} HP`;
+            document.getElementById('hp-bar-fill').style.width = `${(player.hp / player.maxHp) * 100}%`;
+            document.getElementById('dust-count').innerText = stardust;
+            document.getElementById('arrow-count').innerText = standArrows;
+            document.getElementById('corpse-count').innerText = corpseParts;
+            document.getElementById('heal-charges-text').innerText = `${healCharges}/${maxHealCharges}`;
+            document.getElementById('enemy-count').innerText = `Enemies: ${enemies.filter(e => !e.dead).length}`;
+            const bar = document.getElementById('ability-bar');
+            bar.innerHTML = '';
+            STANDS[activeStandKey].abilities.forEach(ab => {
+                const slot = document.createElement('div');
+                slot.className = 'relative flex flex-col items-center justify-center w-11 h-11 bg-slate-900 border border-purple-500/40 rounded-lg p-1 text-center';
+                
+                const keyBadge = document.createElement('span');
+                keyBadge.className = 'absolute top-0.5 left-1 text-[8px] pixel-font text-purple-300';
+                keyBadge.innerText = ab.key;
+                const nameText = document.createElement('span');
+                nameText.className = 'text-[8px] font-bold leading-tight text-slate-200 mt-2 truncate w-full';
+                nameText.innerText = ab.name;
+                if (ab.timer > 0) {
+                    const cdOverlay = document.createElement('div');
+                    cdOverlay.className = 'absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center pixel-font text-[10px] text-red-400';
+                    cdOverlay.innerText = Math.ceil(ab.timer);
+                    slot.appendChild(cdOverlay);
+                }
+                slot.appendChild(keyBadge);
+                slot.appendChild(nameText);
+                bar.appendChild(slot);
+            });
+            if (activeStandKey === 'TUSK_ACT_4') {
+                const st = STANDS.TUSK_ACT_4;
+                const slot = document.createElement('div');
+                slot.className = 'relative flex flex-col items-center justify-center w-11 h-11 bg-pink-950 border border-pink-500/60 rounded-lg p-1 text-center';
+                slot.innerHTML = `<span class="absolute top-0.5 left-1 text-[8px] pixel-font text-pink-300">E/R-Clk</span><span class="text-[8px] font-bold leading-tight text-pink-200 mt-2">NAILS: ${st.currentAmmo}/${st.maxAmmo}</span>`;
+                bar.appendChild(slot);
+            }
+        }
+
+        function toggleQuestLog() {
+            const modal = document.getElementById('quest-modal');
+            const list = document.getElementById('quest-list');
+            if (modal.classList.contains('hidden')) {
+                list.innerHTML = '';
+                Object.keys(QUESTS).forEach(key => {
+                    const q = QUESTS[key];
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-900 border border-amber-900/60 p-3 rounded-lg flex flex-col justify-between';
+                    const itemCheck = q.needItem === "Heaven's Diary" ? inventoryItems.heavensDiary : 
+                                     (q.needItem === "Green Baby" ? inventoryItems.greenBaby : corpseParts > 0);
+                    const canEvolve = q.killsCurrent >= q.killsReq && itemCheck;
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="pixel-font text-xs text-amber-300">${q.title}</span>
+                            <span class="pixel-font text-[9px] ${canEvolve ? 'text-emerald-400' : 'text-slate-400'}">${q.killsCurrent}/${q.killsReq} KILLS</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 mb-2">${q.description}</div>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="${itemCheck ? 'text-emerald-400' : 'text-rose-400'}">Item: ${q.needItem} ${itemCheck ? '✓' : '✗'}</span>
+                            <button onclick="claimEvolution('${key}')" class="pixel-font text-[8px] px-3 py-1 rounded ${canEvolve ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">
+                                ${canEvolve ? 'EVOLVE STAND!' : 'LOCKED'}
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function claimEvolution(questKey) {
+            const q = QUESTS[questKey];
+            const itemCheck = q.needItem === "Heaven's Diary" ? inventoryItems.heavensDiary : 
+                             (q.needItem === "Green Baby" ? inventoryItems.greenBaby : corpseParts > 0);
+            if (q.killsCurrent >= q.killsReq && itemCheck) {
+                STANDS[q.rewardStand].unlocked = true;
+                selectStand(q.rewardStand);
+                toggleQuestLog();
+                flashScreen(STANDS[q.rewardStand].color, 600);
+                audio.playUltimate();
+            }
+        }
+
+        function toggleStandMenu() {
+            const modal = document.getElementById('stand-modal');
+            const list = document.getElementById('stand-list');
+            
+            if (modal.classList.contains('hidden')) {
+                list.innerHTML = '';
+                Object.keys(STANDS).forEach(key => {
+                    const st = STANDS[key];
+                    const card = document.createElement('div');
+                    card.className = `bg-slate-900 border ${activeStandKey === key ? 'border-purple-500 bg-purple-950/40' : 'border-slate-800'} p-3 rounded-xl flex flex-col justify-between`;
+                    
+                    card.innerHTML = `
+                        <div>
+                            <div class="pixel-font text-xs mb-1" style="color: ${st.color}">${st.name}</div>
+                            <div class="text-[11px] text-slate-400 leading-tight mb-3">${st.description}</div>
+                        </div>
+                        <button onclick="selectStand('${key}')" class="pixel-font text-[9px] w-full py-1.5 rounded ${st.unlocked ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">
+                            ${st.unlocked ? (activeStandKey === key ? 'EQUIPPED' : 'EQUIP') : 'UNLOCK (1 ARROW)'}
+                        </button>
+                    `;
+                    list.appendChild(card);
+                });
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function selectStand(key) {
+            if (!STANDS[key].unlocked) {
+                if (standArrows >= 1) {
+                    standArrows--;
+                    STANDS[key].unlocked = true;
+                    audio.playTimeStop();
+                } else {
+                    return;
+                }
+            }
+            activeStandKey = key;
+            document.getElementById('stand-badge').innerText = STANDS[key].name;
+            document.getElementById('stand-badge').style.color = STANDS[key].color;
+            if (!document.getElementById('stand-modal').classList.contains('hidden')) toggleStandMenu();
+            updateHUD();
+        }
+
+        function respawnPlayer() {
+            player.hp = player.maxHp;
+            healCharges = maxHealCharges;
+            loadRoom(1, 'combat');
+        }
+
+        // Draw Gothic Atmospheric Background
+        function drawGothicBackground() {
+            // Twilight Sky Gradient
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGrad.addColorStop(0, '#100b1e');
+            skyGrad.addColorStop(0.5, '#28113a');
+            skyGrad.addColorStop(1, '#4a154b');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Crescent Moon
+            ctx.fillStyle = '#fce7f3';
+            ctx.beginPath();
+            ctx.arc(520, 60, 24, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#28113a';
+            ctx.beginPath();
+            ctx.arc(512, 54, 22, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Background Distant Cathedral Ruins & Arches
+            ctx.fillStyle = 'rgba(20, 15, 35, 0.7)';
+            // Gothic Spires & Arches
+            ctx.fillRect(80, 100, 50, 210);
+            ctx.beginPath();
+            ctx.moveTo(80, 100); ctx.lineTo(105, 40); ctx.lineTo(130, 100);
+            ctx.fill();
+
+            ctx.fillRect(480, 120, 60, 190);
+            ctx.beginPath();
+            ctx.moveTo(480, 120); ctx.lineTo(510, 50); ctx.lineTo(540, 120);
+            ctx.fill();
+
+            // Middleground Pillars and Statues
+            ctx.fillStyle = '#171226';
+            for (let i = 40; i < canvas.width; i += 180) {
+                // Pillar Base & Shaft
+                ctx.fillRect(i, 80, 22, 230);
+                ctx.fillRect(i - 4, 80, 30, 12);
+                ctx.fillRect(i - 4, 298, 30, 12);
+                
+                // Statue Silhouettes atop Pillars
+                ctx.beginPath();
+                ctx.arc(i + 11, 68, 8, 0, Math.PI * 2);
+                ctx.fillRect(i + 5, 74, 12, 10);
+                ctx.fill();
+            }
+
+            // Manga Action Effect Lines in Sky background
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            for (let j = 0; j < canvas.width; j += 40) {
+                ctx.beginPath();
+                ctx.moveTo(j, 0);
+                ctx.lineTo(j - 60, canvas.height);
+                ctx.stroke();
+            }
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mouseCanvasX = ((e.clientX - rect.left) / rect.width) * canvas.width;
+            mouseCanvasY = ((e.clientY - rect.top) / rect.height) * canvas.height;
+        });
+
+        canvas.addEventListener('mousedown', e => {
+            audio.init();
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = ((e.clientX - rect.left) / rect.width) * canvas.width;
+            player.facing = mouseX < player.x ? -1 : 1;
+
+            if (e.button === 0) {
+                executeM1Attack();
+            } else if (e.button === 2 && activeStandKey === 'TUSK_ACT_4') {
+                e.preventDefault();
+                fireTuskProjectiles();
+            }
+        });
+
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        window.addEventListener('keydown', e => {
+            audio.init();
+            const k = e.key.toLowerCase();
+            if (e.key === 'Escape') {
+                togglePauseMenu();
+                return;
+            }
+            if (isPaused) return;
+
+            if (k === 'a') keys.a = true;
+            if (k === 'd') keys.d = true;
+            if (k === 'w' || e.code === 'Space') player.jump();
+            if (e.key === 'Shift') player.dash();
+            if (k === 'j' || k === 'z') executeM1Attack();
+            if (k === 'h') useHealingPotion();
+            if (k === 'e') {
+                if (activeStandKey === 'TUSK_ACT_4') fireTuskProjectiles();
+                else toggleStandMenu();
+            }
+            if (k === 'q') toggleQuestLog();
+            if (['1', '2', '3', '4'].includes(k)) executeAbility(parseInt(k) - 1);
+            if (k === 'r') executeAbility(4);
+        });
+
+        window.addEventListener('keyup', e => {
+            const k = e.key.toLowerCase();
+            if (k === 'a') keys.a = false;
+            if (k === 'd') keys.d = false;
+        });
+
+        const player = new Player();
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Render Gothic Atmosphere Background
+            drawGothicBackground();
+
+            const stand = STANDS[activeStandKey];
+            const cdMultiplier = activeStandKey === 'MIH' ? 2.5 : 1.0;
+            stand.abilities.forEach(ab => {
+                if (ab.timer > 0) {
+                    ab.timer -= (1 / 60) * cdMultiplier;
+                    if (ab.timer < 0) ab.timer = 0;
+                }
+            });
+
+            if (activeStandKey === 'TUSK_ACT_4') {
+                const st = STANDS.TUSK_ACT_4;
+                if (st.currentAmmo < st.maxAmmo) {
+                    st.ammoRegenTimer += 1 / 60;
+                    if (st.ammoRegenTimer >= 1.5) {
+                        st.currentAmmo++;
+                        st.ammoRegenTimer = 0;
+                        updateHUD();
+                    }
+                }
+            }
+
+            player.update();
+            enemies.forEach(e => e.update());
+            projectiles.forEach(p => p.update());
+            enemyProjectiles.forEach(ep => ep.update());
+            chests.forEach(c => {
+                if (!c.opened && Math.abs(player.x - c.x) < 20 && Math.abs(player.y - c.y) < 20) {
+                    c.open();
+                }
+            });
+
+            if (enemies.every(e => e.dead) && player.x > canvas.width - 25) {
+                triggerRoomChoice();
+                player.x = canvas.width - 30;
+            }
+
+            // Draw Detailed Gothic Stone Platforms
+            platforms.forEach(p => {
+                ctx.fillStyle = '#1e1b2e';
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.strokeStyle = '#4c1d95';
+                ctx.strokeRect(p.x, p.y, p.w, p.h);
+                // Carved Top Pattern
+                ctx.fillStyle = '#2d264a';
+                ctx.fillRect(p.x, p.y, p.w, 3);
+            });
+
+            // Draw Hazards (Spikes)
+            ctx.fillStyle = '#ef4444';
+            hazards.forEach(h => {
+                for (let i = 0; i < h.w; i += 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(h.x + i, h.y + h.h);
+                    ctx.lineTo(h.x + i + 5, h.y);
+                    ctx.lineTo(h.x + i + 10, h.y + h.h);
+                    ctx.fill();
+                }
+            });
+
+            chests.forEach(c => c.draw());
+            enemies.forEach(e => e.draw());
+            projectiles.forEach(p => p.draw());
+            enemyProjectiles.forEach(ep => ep.draw());
+            player.draw();
+
+            if (activeStandKey.startsWith('TUSK')) {
+                ctx.strokeStyle = '#f472b6';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(mouseCanvasX, mouseCanvasY, 6, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = () => {
+            loadRoom(1, 'combat');
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
